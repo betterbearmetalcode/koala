@@ -25,7 +25,7 @@ public class Server {
     public Server(int port) throws IOException {
         serverSocket = new ServerSocket(port);
         jmdns = JmDNS.create();
-        ServiceInfo serviceInfo = ServiceInfo.create("_koala._tcp.local.", "KoalaService", port, "Service for Koala, the Bear Metal data transfer library");
+        ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "koala", port, "Service for Koala, the Bear Metal data transfer library");
         jmdns.registerService(serviceInfo);
         logger.info("Service registered at port {}", port);
     }

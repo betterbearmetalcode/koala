@@ -8,7 +8,7 @@
             <SchemaInfo>
               <option name="name" value="JSON Schema 7" />
               <option name="relativePathToSchema" value="http://json-schema.org/draft-07/schema" />
-              <option name="schemaVersion" value="JSON Schema 7" />
+              <option name="schemaVersion" />
               <option name="applicationDefined" value="true" />
               <option name="patterns">
                 <list>

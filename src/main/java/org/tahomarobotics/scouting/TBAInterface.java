@@ -36,11 +36,11 @@ public class TBAInterface {
 
             // Create an HTTP client
             HttpResponse<String> response;
-            try (HttpClient client = HttpClient.newBuilder()
-                    .version(HttpClient.Version.HTTP_2)
-                    .followRedirects(HttpClient.Redirect.NORMAL)
-                    .build()) {
-
+            try {
+                 HttpClient client = HttpClient.newBuilder()
+                         .version(HttpClient.Version.HTTP_2)
+                         .followRedirects(HttpClient.Redirect.NORMAL)
+                         .build();
                 // Build the HTTP request with the API key in the header
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(object)
@@ -50,6 +50,8 @@ public class TBAInterface {
 
                 // Send the request and receive the response
                 response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
             // Handle different response status codes
@@ -65,11 +67,6 @@ public class TBAInterface {
             }
         } catch (URISyntaxException e) {
             logger.error("Invalid URI: {}", e.getMessage());
-        } catch (IOException e) {
-            logger.error("I/O error: {}", e.getMessage());
-        } catch (InterruptedException e) {
-            logger.error("Request interrupted: {}", e.getMessage());
-            Thread.currentThread().interrupt(); // Restore interrupted status
         }
         return null;
     }

@@ -21,7 +21,8 @@ public class Client {
     private boolean connected = false;
 
     public Client() throws IOException {
-        jmdns = JmDNS.create(InetAddress.getLocalHost());
+        jmdns = JmDNS.create(InetAddress.getLocalHost(), "Client");
+
     }
 
     /**
@@ -33,6 +34,7 @@ public class Client {
         jmdns.addServiceListener(serviceType, new ServiceListener() {
             @Override
             public void serviceAdded(ServiceEvent event) {
+                jmdns.requestServiceInfo(serviceType, event.getName());
                 logger.info("Service added: {}", event.getName());
             }
 
@@ -50,7 +52,7 @@ public class Client {
         });
     }
 
-    private void connect(String host, int port) {
+     void connect(String host, int port) {
         try {
             socket = new Socket(host, port);
             connected = true;
