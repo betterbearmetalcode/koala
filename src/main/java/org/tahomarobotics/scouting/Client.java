@@ -6,36 +6,37 @@ import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Client class for discovering and connecting to services using JmDNS.
+ * Client class for all interactions with client devices.
  */
 public class Client {
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
     private Socket socket;
-    private JmDNS jmdns;
+    private final JmDNS jmdns;
     private boolean connected = false;
 
     public Client() throws IOException {
-        jmdns = JmDNS.create(InetAddress.getLocalHost(), "Client");
-
+        jmdns = JmDNS.create();
     }
 
     /**
-     * Discovers and connects to a service of the specified type.
-     *
-     * @param serviceType the type of service to discover.
+     * Discovers and connects to the koala service.
      */
-    public void discoverAndConnect(String serviceType) {
-        jmdns.addServiceListener(serviceType, new ServiceListener() {
+    public void discoverAndConnect() {
+        jmdns.addServiceListener("_http._tcp.local.", new ServiceListener() {
             @Override
             public void serviceAdded(ServiceEvent event) {
-                jmdns.requestServiceInfo(serviceType, event.getName());
-                logger.info("Service added: {}", event.getName());
+                String serviceName = event.getName();
+                if (serviceName.equals("koala")) {
+                    jmdns.requestServiceInfo("_http._tcp.local.", serviceName);
+                    logger.info("Koala service added: {}", serviceName);
+                } else {
+                    logger.info("Service added (but not koala): {}", serviceName);
+                }
             }
 
             @Override
@@ -46,19 +47,29 @@ public class Client {
             @Override
             public void serviceResolved(ServiceEvent event) {
                 ServiceInfo info = event.getInfo();
-                logger.info("Service resolved: {}", info.getQualifiedName());
-                connect(info.getHostAddresses()[0], info.getPort());
+                if (info.getHostAddresses().length > 0 && info.getPort() > 0) {
+                    logger.info("Service resolved: {}", info.getQualifiedName());
+                    connectByIP(info.getHostAddresses()[0], info.getPort());
+                } else {
+                    logger.warn("Service resolution incomplete: {}", info.getQualifiedName());
+                }
             }
         });
     }
 
-     void connect(String host, int port) {
+    /**
+     * Connects to a server via IP address.
+     *
+     * @param ip the ip of the server
+     * @param port the port the server is listening on
+     */
+    public void connectByIP(String ip, int port) {
         try {
-            socket = new Socket(host, port);
+            socket = new Socket(ip, port);
             connected = true;
-            logger.info("Connected to {}:{}", host, port);
+            logger.info("Connected to {}:{}", ip, port);
         } catch (IOException e) {
-            logger.error("Failed to connect to {}:{}", host, port, e);
+            logger.error("Failed to connect to {}:{}", ip, port, e);
         }
     }
 
@@ -71,7 +82,7 @@ public class Client {
         if (connected) {
             try {
                 OutputStream out = socket.getOutputStream();
-                out.write(data.getBytes());
+                out.write((data + "\n").getBytes());
                 out.flush();
                 logger.info("Data sent: {}", data);
             } catch (IOException e) {
