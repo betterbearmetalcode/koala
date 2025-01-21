@@ -1,14 +1,28 @@
 package org.tahomarobotics.scouting;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 
 public class Main {
-    public static void main(String[] args) throws IOException, URISyntaxException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException {
 
-        DatabaseManager databaseManager = new DatabaseManager();
+//        DatabaseManager databaseManager = new DatabaseManager(2025);
+//
+//        databaseManager.processTeamsForEvent("2025oral");
+//
+//        Server server = new Server(2046, false);
+//
+//        server.start();
 
-        System.out.println(databaseManager.getTeamsFromMatch(2025, 8, "2024orsal"));
+        Client client = new Client();
+
+        client.connectByIP("0.0.0.0", 2046);
+
+        Thread.sleep(5000);
+
+        client.sendData("""
+                {
+                    "data": = 3
+                }
+                """);
     }
 }

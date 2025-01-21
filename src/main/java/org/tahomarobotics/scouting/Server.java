@@ -1,12 +1,14 @@
 package org.tahomarobotics.scouting;
 
-import javax.jmdns.JmDNS;
-import javax.jmdns.ServiceInfo;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.jmdns.JmDNS;
+import javax.jmdns.ServiceInfo;
+import java.io.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 /**
  * A server that listens for client connections and registers a service using JmDNS.
@@ -17,17 +19,49 @@ public class Server {
     private JmDNS jmdns;
 
     /**
-     * Constructs a Server instance and registers the service on the specified port.
+     * Constructs a Server instance and optionally registers the service on the specified port.
      *
-     * @param port The port on which the server will listen for connections.
+     * @param port    The port on which the server will listen for connections.
+     * @param useMdns Whether to register the service using mDNS.
      * @throws IOException If an I/O error occurs when opening the socket or registering the service.
      */
-    public Server(int port) throws IOException {
+    public Server(int port, boolean useMdns) throws IOException {
         serverSocket = new ServerSocket(port);
-        jmdns = JmDNS.create();
-        ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "koala", port, "Service for Koala, the Bear Metal data transfer library");
-        jmdns.registerService(serviceInfo);
-        logger.info("Service registered at port {}", port);
+
+        if (useMdns) {
+            jmdns = JmDNS.create();
+            ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "koala", port, "Service for Koala, the Bear Metal data transfer library");
+            jmdns.registerService(serviceInfo);
+            logger.info("Service registered at port {}", port);
+        }
+    }
+
+    /**
+     * Returns the server's IP address and port in the format "IP:Port".
+     *
+     * @return A string representing the server's IP address and port.
+     */
+    public String getServerAddress() {
+        return getServerIp() + ":" + getServerPort();
+    }
+
+    /**
+     * Returns the server's IP address.
+     *
+     * @return The server's IP address as a string.
+     */
+    public String getServerIp() {
+        InetAddress inetAddress = serverSocket.getInetAddress();
+        return inetAddress.getHostAddress();
+    }
+
+    /**
+     * Returns the server's port.
+     *
+     * @return The server's port as an integer.
+     */
+    public int getServerPort() {
+        return serverSocket.getLocalPort();
     }
 
     /**
@@ -35,7 +69,7 @@ public class Server {
      * This method runs indefinitely until the server is stopped.
      */
     public void start() {
-        logger.info("Server started. Waiting for connections...");
+        logger.info("Server started at {}. Waiting for connections...", getServerAddress());
         while (true) {
             try {
                 Socket clientSocket = serverSocket.accept();
@@ -57,7 +91,9 @@ public class Server {
         try {
             if (serverSocket != null) {
                 serverSocket.close();
-                jmdns.unregisterAllServices();
+                if (jmdns != null) {
+                    jmdns.unregisterAllServices();
+                }
                 logger.info("Server stopped and service unregistered.");
             }
         } catch (IOException e) {
@@ -68,22 +104,17 @@ public class Server {
     /**
      * Handles communication with a single client.
      */
-    private static class ClientHandler implements Runnable {
-        private final Socket clientSocket;
-
-        public ClientHandler(Socket clientSocket) {
-            this.clientSocket = clientSocket;
-        }
+    private record ClientHandler(Socket clientSocket) implements Runnable {
 
         @Override
         public void run() {
             try {
-                // Handle client communication here
-                logger.info("Handling client: {}", clientSocket.getInetAddress());
-                // Example: Read from and write to the client socket
-                // InputStream input = clientSocket.getInputStream();
-                // OutputStream output = clientSocket.getOutputStream();
-                // ...
+                // Get input stream from socket
+                String clientMessage = getString();
+
+                // Print the received message
+                System.out.println("Received from client: " + clientMessage);
+
             } catch (Exception e) {
                 logger.error("Error handling client", e);
             } finally {
@@ -93,6 +124,21 @@ public class Server {
                     logger.error("Error closing client socket", e);
                 }
             }
+        }
+
+        private String getString() throws IOException {
+            InputStream inputStream = clientSocket.getInputStream();
+            StringBuilder clientMessageBuilder = new StringBuilder();
+            int byteRead;
+
+            // Read byte-by-byte until end of stream
+            while ((byteRead = inputStream.read()) != -1) {
+                clientMessageBuilder.append((char) byteRead);
+            }
+
+            // Convert the received byte sequence to a single string (the full JSON message)
+            String clientMessage = clientMessageBuilder.toString();
+            return clientMessage;
         }
     }
 }
