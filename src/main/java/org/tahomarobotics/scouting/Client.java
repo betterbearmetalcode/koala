@@ -6,7 +6,13 @@ import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +26,7 @@ public class Client {
     private boolean connected = false;
 
     public Client() throws IOException {
-        jmdns = JmDNS.create();
+        jmdns = JmDNS.create(InetAddress.getByName("192.168.137.1"));
     }
 
     /**
@@ -82,9 +88,42 @@ public class Client {
         if (connected) {
             try {
                 OutputStream out = socket.getOutputStream();
-                out.write((data + "\n").getBytes());
-                out.flush();
+                OutputStreamWriter writer = new OutputStreamWriter(out);
+                writer.write(data + '\u0003');
+                writer.flush();
                 logger.info("Data sent: {}", data);
+            } catch (IOException e) {
+                logger.error("Failed to send data", e);
+            }
+        } else {
+            logger.warn("Not connected to a server.");
+        }
+    }
+
+    /**
+     * Sends data to the connected server.
+     *
+     * @param data the data to send.
+     *
+     * @param headers headers to be put at the top of the data packet
+     */
+    public void sendData(String data, String... headers) {
+        if (connected) {
+            try {
+                OutputStream out = socket.getOutputStream();
+                OutputStreamWriter writer = new OutputStreamWriter(out);
+                StringBuilder pendingData = new StringBuilder("{ \"header\": {\n");
+                List<String> headersAsList = Arrays.stream(headers).toList();
+                for (String header : headers) {
+                    //Format : "h[indexOfHeader] : "header" \n
+                    pendingData.append("\"h").append(headersAsList.indexOf(header)).append("\" : \"").append(header).append("\",\n");
+                }
+                pendingData.deleteCharAt(pendingData.length()-2);
+                pendingData.append("},\n \"data\" : ").append(data).append("}");
+
+                writer.write(pendingData.toString() + '\u0003');
+                writer.flush();
+                logger.info("Data sent: {}", pendingData.toString());
             } catch (IOException e) {
                 logger.error("Failed to send data", e);
             }
