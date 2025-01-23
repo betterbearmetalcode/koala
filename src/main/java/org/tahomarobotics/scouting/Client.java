@@ -9,7 +9,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,45 +22,50 @@ import org.slf4j.LoggerFactory;
 public class Client {
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
     private Socket socket;
-    private final JmDNS jmdns;
+    private final ArrayList<JmDNS> jmdnss = new ArrayList<>();
     private boolean connected = false;
 
     public Client() throws IOException {
-        jmdns = JmDNS.create(InetAddress.getByName("192.168.137.1"));
+        InetAddress[] addresses = InetAddress.getAllByName(InetAddress.getLocalHost().getHostName());
+        for (int i = 0; i < addresses.length/2; i++) {
+            jmdnss.add(JmDNS.create(InetAddress.getByName(addresses[i].getHostAddress())));
+        }
     }
 
     /**
      * Discovers and connects to the koala service.
      */
     public void discoverAndConnect() {
-        jmdns.addServiceListener("_http._tcp.local.", new ServiceListener() {
-            @Override
-            public void serviceAdded(ServiceEvent event) {
-                String serviceName = event.getName();
-                if (serviceName.equals("koala")) {
-                    jmdns.requestServiceInfo("_http._tcp.local.", serviceName);
-                    logger.info("Koala service added: {}", serviceName);
-                } else {
-                    logger.info("Service added (but not koala): {}", serviceName);
+        for (JmDNS jmdns: jmdnss) {
+            jmdns.addServiceListener("_http._tcp.local.", new ServiceListener() {
+                @Override
+                public void serviceAdded(ServiceEvent event) {
+                    String serviceName = event.getName();
+                    if (serviceName.equals("koala")) {
+                        jmdns.requestServiceInfo("_http._tcp.local.", serviceName);
+                        logger.info("Koala service added: {}", serviceName);
+                    } else {
+                        logger.info("Service added (but not koala): {}", serviceName);
+                    }
                 }
-            }
 
-            @Override
-            public void serviceRemoved(ServiceEvent event) {
-                logger.info("Service removed: {}", event.getName());
-            }
-
-            @Override
-            public void serviceResolved(ServiceEvent event) {
-                ServiceInfo info = event.getInfo();
-                if (info.getHostAddresses().length > 0 && info.getPort() > 0) {
-                    logger.info("Service resolved: {}", info.getQualifiedName());
-                    connectByIP(info.getHostAddresses()[0], info.getPort());
-                } else {
-                    logger.warn("Service resolution incomplete: {}", info.getQualifiedName());
+                @Override
+                public void serviceRemoved(ServiceEvent event) {
+                    logger.info("Service removed: {}", event.getName());
                 }
-            }
-        });
+
+                @Override
+                public void serviceResolved(ServiceEvent event) {
+                    ServiceInfo info = event.getInfo();
+                    if (info.getHostAddresses().length > 0 && info.getPort() > 0) {
+                        logger.info("Service resolved: {}", info.getQualifiedName());
+                        connectByIP(info.getHostAddresses()[0], info.getPort());
+                    } else {
+                        logger.warn("Service resolution incomplete: {}", info.getQualifiedName());
+                    }
+                }
+            });
+        }
     }
 
     /**
