@@ -1,11 +1,18 @@
 <configuration>
+
+    <!-- Console Appender -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="debug">
+    <!-- Set root logging level to INFO -->
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
+
+    <!-- Suppress debug logging for javax.jmdns package -->
+    <logger name="javax.jmdns" level="WARN"/>
+
 </configuration>
