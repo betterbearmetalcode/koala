@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A server that listens for client connections and registers a service using JmDNS.
@@ -27,6 +28,12 @@ public class Server {
      */
     public Server(int port, boolean useMdns) throws IOException {
         serverSocket = new ServerSocket(port);
+
+        InetAddress[] addresses = InetAddress.getAllByName(InetAddress.getLocalHost().getHostName());
+
+        for (InetAddress address : addresses) {
+            logger.info("Address: {}, Name: {}", address.getHostAddress(), address.getCanonicalHostName());
+        }
 
         if (useMdns) {
             jmdns = JmDNS.create();
@@ -70,16 +77,16 @@ public class Server {
      */
     public void start() {
         logger.info("Server started at {}. Waiting for connections...", getServerAddress());
-        while (true) {
-            try {
+
+        try {
+            while (true) {
                 Socket clientSocket = serverSocket.accept();
                 logger.info("Client connected: {}", clientSocket.getInetAddress());
                 // Start a new thread to handle the client connection
                 new Thread(new ClientHandler(clientSocket)).start();
-            } catch (IOException e) {
-                logger.error("Error accepting client connection", e);
-                break;
             }
+        } catch (IOException e) {
+            logger.error("Error accepting client connection", e);
         }
     }
 
@@ -108,21 +115,18 @@ public class Server {
 
         @Override
         public void run() {
+            System.out.println("did something");
             try {
-                // Get input stream from socket
-                String clientMessage = getString();
+                while (true) {
+                    // Get input stream from socket
+                    String clientMessage = getString();
 
-                // Print the received message
-                System.out.println("Received from client: " + clientMessage);
+                    // Print the received message
+                    logger.info("Received from client: {}", clientMessage);
+                }
 
             } catch (Exception e) {
                 logger.error("Error handling client", e);
-            } finally {
-                try {
-                    clientSocket.close();
-                } catch (IOException e) {
-                    logger.error("Error closing client socket", e);
-                }
             }
         }
 
@@ -131,8 +135,7 @@ public class Server {
             StringBuilder clientMessageBuilder = new StringBuilder();
             int byteRead;
 
-            // Read byte-by-byte until end of stream
-            while ((byteRead = inputStream.read()) != -1) {
+            while ((byteRead = inputStream.read()) != '\u0003') {
                 clientMessageBuilder.append((char) byteRead);
             }
 
