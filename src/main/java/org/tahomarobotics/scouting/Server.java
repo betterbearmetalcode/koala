@@ -1,5 +1,8 @@
 package org.tahomarobotics.scouting;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,28 +12,33 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 
 /**
  * A server that listens for client connections and registers a service using JmDNS.
  */
 public class Server {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
+    private static final Gson gson = new Gson();
     private ServerSocket serverSocket;
     private JmDNS jmdns;
+    
+    private int year;
 
     /**
      * Constructs a Server instance and optionally registers the service on the specified port.
      *
      * @param port    The port on which the server will listen for connections.
      * @param useMdns Whether to register the service using mDNS.
+     * @param year
      * @throws IOException If an I/O error occurs when opening the socket or registering the service.
      */
-    public Server(int port, boolean useMdns) throws IOException {
+    public Server(int port, boolean useMdns, int year) throws IOException {
         serverSocket = new ServerSocket(port);
+        
+        this.year = year;
 
         InetAddress[] addresses = InetAddress.getAllByName(InetAddress.getLocalHost().getHostName());
-
+        
         for (InetAddress address : addresses) {
             logger.info("Address: {}, Name: {}", address.getHostAddress(), address.getCanonicalHostName());
         }
@@ -83,7 +91,7 @@ public class Server {
                 Socket clientSocket = serverSocket.accept();
                 logger.info("Client connected: {}", clientSocket.getInetAddress());
                 // Start a new thread to handle the client connection
-                new Thread(new ClientHandler(clientSocket)).start();
+                new Thread(new ClientHandler(clientSocket, year)).start();
             }
         } catch (IOException e) {
             logger.error("Error accepting client connection", e);
@@ -111,11 +119,10 @@ public class Server {
     /**
      * Handles communication with a single client.
      */
-    private record ClientHandler(Socket clientSocket) implements Runnable {
+    private record ClientHandler(Socket clientSocket, int year) implements Runnable {
 
         @Override
         public void run() {
-            System.out.println("did something");
             try {
                 while (true) {
                     // Get input stream from socket
@@ -123,6 +130,36 @@ public class Server {
 
                     // Print the received message
                     logger.info("Received from client: {}", clientMessage);
+
+                    JsonObject jsonObject = gson.fromJson(clientMessage, JsonObject.class);
+
+                    JsonElement headerElement = jsonObject.get("header");
+                    
+                    if (headerElement == null) {
+                        logger.error("No header in json data. Skipping...");
+                        continue;
+                    }
+                    
+                    String header = headerElement.getAsJsonObject().get("h0").getAsString();
+                    
+                    DatabaseManager databaseManager = new DatabaseManager(year);
+                    
+                    String data = jsonObject.get("data").toString();
+                    
+                    switch (header) {
+                        case "match":
+                            databaseManager.processMainScoutJson(data);
+                            break;
+                        case "strat":
+                            databaseManager.processStrategyScoutJson(data);
+                            break;
+                        case "pit":
+                            break;
+                        default:
+                            logger.error("\"{}\" is not a valid header!", header);
+                            continue;
+                    }
+                    
                 }
 
             } catch (Exception e) {
