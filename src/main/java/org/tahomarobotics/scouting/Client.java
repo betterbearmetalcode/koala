@@ -8,9 +8,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -26,9 +28,20 @@ public class Client {
     private boolean connected = false;
 
     public Client() throws IOException {
-        InetAddress[] addresses = InetAddress.getAllByName(InetAddress.getLocalHost().getHostName());
-        for (int i = 0; i < addresses.length/2; i++) {
-            jmdnss.add(JmDNS.create(InetAddress.getByName(addresses[i].getHostAddress())));
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface networkInterface = interfaces.nextElement();
+            Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
+            
+            while (addresses.hasMoreElements()) {
+                InetAddress address = addresses.nextElement();
+                if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
+                    logger.info("Local Network IP: {}", address.getHostAddress());
+                    JmDNS jmdns = JmDNS.create(address);
+                    jmdnss.add(jmdns);
+                }
+            }
         }
     }
 

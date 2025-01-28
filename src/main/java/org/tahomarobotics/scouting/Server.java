@@ -10,8 +10,11 @@ import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
 import java.io.*;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Enumeration;
 
 /**
  * A server that listens for client connections and registers a service using JmDNS.
@@ -21,53 +24,45 @@ public class Server {
     private static final Gson gson = new Gson();
     private ServerSocket serverSocket;
     private JmDNS jmdns;
-    
-    private int year;
+
+    private final int year;
 
     /**
      * Constructs a Server instance and optionally registers the service on the specified port.
      *
      * @param port    The port on which the server will listen for connections.
      * @param useMdns Whether to register the service using mDNS.
-     * @param year
+     * @param year    The year that the season is currently.
      * @throws IOException If an I/O error occurs when opening the socket or registering the service.
      */
     public Server(int port, boolean useMdns, int year) throws IOException {
         serverSocket = new ServerSocket(port);
-        
+
         this.year = year;
 
-        InetAddress[] addresses = InetAddress.getAllByName(InetAddress.getLocalHost().getHostName());
-        
-        for (InetAddress address : addresses) {
-            logger.info("Address: {}, Name: {}", address.getHostAddress(), address.getCanonicalHostName());
+        ArrayList<InetAddress> addresses = new ArrayList<>();
+
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface networkInterface = interfaces.nextElement();
+            Enumeration<InetAddress> addressEnum = networkInterface.getInetAddresses();
+
+            while (addressEnum.hasMoreElements()) {
+                InetAddress address = addressEnum.nextElement();
+                if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
+                    logger.info("Local Network IP: {}", address.getHostAddress());
+                    addresses.add(address);
+                }
+            }
         }
 
         if (useMdns) {
-            jmdns = JmDNS.create();
+            jmdns = JmDNS.create(addresses.get(0));
             ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "koala", port, "Service for Koala, the Bear Metal data transfer library");
             jmdns.registerService(serviceInfo);
             logger.info("Service registered at port {}", port);
         }
-    }
-
-    /**
-     * Returns the server's IP address and port in the format "IP:Port".
-     *
-     * @return A string representing the server's IP address and port.
-     */
-    public String getServerAddress() {
-        return getServerIp() + ":" + getServerPort();
-    }
-
-    /**
-     * Returns the server's IP address.
-     *
-     * @return The server's IP address as a string.
-     */
-    public String getServerIp() {
-        InetAddress inetAddress = serverSocket.getInetAddress();
-        return inetAddress.getHostAddress();
     }
 
     /**
@@ -84,7 +79,7 @@ public class Server {
      * This method runs indefinitely until the server is stopped.
      */
     public void start() {
-        logger.info("Server started at {}. Waiting for connections...", getServerAddress());
+        logger.info("Server started. Waiting for connections...");
 
         try {
             while (true) {
@@ -134,18 +129,18 @@ public class Server {
                     JsonObject jsonObject = gson.fromJson(clientMessage, JsonObject.class);
 
                     JsonElement headerElement = jsonObject.get("header");
-                    
+
                     if (headerElement == null) {
                         logger.error("No header in json data. Skipping...");
                         continue;
                     }
-                    
+
                     String header = headerElement.getAsJsonObject().get("h0").getAsString();
-                    
+
                     DatabaseManager databaseManager = new DatabaseManager(year);
-                    
+
                     String data = jsonObject.get("data").toString();
-                    
+
                     switch (header) {
                         case "match":
                             databaseManager.processMainScoutJson(data);
@@ -159,7 +154,7 @@ public class Server {
                             logger.error("\"{}\" is not a valid header!", header);
                             continue;
                     }
-                    
+
                 }
 
             } catch (Exception e) {
