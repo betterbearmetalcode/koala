@@ -58,10 +58,12 @@ public class Server {
         }
 
         if (useMdns) {
-            jmdns = JmDNS.create(addresses.get(0));
-            ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "koala", port, "Service for Koala, the Bear Metal data transfer library");
-            jmdns.registerService(serviceInfo);
-            logger.info("Service registered at port {}", port);
+            for (InetAddress address : addresses) {
+                jmdns = JmDNS.create(address);
+                ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "koala", port, "Service for Koala, the Bear Metal data transfer library");
+                jmdns.registerService(serviceInfo);
+                logger.info("Service registered on address {} at port {}", address.getHostAddress(), port);
+            }
         }
     }
 
