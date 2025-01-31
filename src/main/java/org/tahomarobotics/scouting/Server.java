@@ -10,11 +10,8 @@ import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
 import java.io.*;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Enumeration;
 
 /**
  * A server that listens for client connections and registers a service using JmDNS.
@@ -35,35 +32,16 @@ public class Server {
      * @param year    The year that the season is currently.
      * @throws IOException If an I/O error occurs when opening the socket or registering the service.
      */
-    public Server(int port, boolean useMdns, int year) throws IOException {
+    public Server(int port, boolean useMdns, int year, InetAddress ipAddress) throws IOException {
         serverSocket = new ServerSocket(port);
 
         this.year = year;
 
-        ArrayList<InetAddress> addresses = new ArrayList<>();
-
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-
-        while (interfaces.hasMoreElements()) {
-            NetworkInterface networkInterface = interfaces.nextElement();
-            Enumeration<InetAddress> addressEnum = networkInterface.getInetAddresses();
-
-            while (addressEnum.hasMoreElements()) {
-                InetAddress address = addressEnum.nextElement();
-                if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
-                    logger.info("Local Network IP: {}", address.getHostAddress());
-                    addresses.add(address);
-                }
-            }
-        }
-
         if (useMdns) {
-            for (InetAddress address : addresses) {
-                jmdns = JmDNS.create(address);
-                ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "koala", port, "Service for Koala, the Bear Metal data transfer library");
-                jmdns.registerService(serviceInfo);
-                logger.info("Service registered on address {} at port {}", address.getHostAddress(), port);
-            }
+            ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "koala", port, "Service for Koala, the Bear Metal data transfer library");
+            jmdns = JmDNS.create(ipAddress);
+            jmdns.registerService(serviceInfo);
+            logger.info("Service registered on address {} at port {}", ipAddress.getHostAddress(), port);
         }
     }
 
