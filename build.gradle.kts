@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("maven-publish")
 }
 
 group = "org.tahomarobotics.scouting"
@@ -20,4 +21,23 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            description = "Koala is a highly customized data transfer, database manager, and TBA data fetcher rolled into one. It is a library designed for the Bear Metal Scouting suite of applications."
+            url = uri("https://maven.pkg.github.com/betterbearmetalcode/koala")
+            credentials {
+                username = System.getenv("GITHUB_USERNAME")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+    publications {
+        register<MavenPublication>("gpr") {
+            from(components["java"])
+        }
+    }
 }
