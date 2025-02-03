@@ -27,6 +27,15 @@ public class Client {
     private final ArrayList<JmDNS> jmdnss = new ArrayList<>();
     private boolean connected = false;
 
+    /**
+     * Returns whether the client has connected to the server
+     *
+     * @return The connection status of the client
+     */
+    public boolean isConnected() {
+        return connected;
+    }
+
     public Client() throws IOException {
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         
