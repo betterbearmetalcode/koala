@@ -12,11 +12,18 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.EventListener;
+import java.util.List;
 
 /**
  * A server that listens for client connections and registers a service using JmDNS.
  */
 public class Server {
+    private List<ServerListener> listeners = new ArrayList<>();
+    public interface ServerListener extends EventListener {
+        void receivedData(String data);
+    }
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
     private static final Gson gson = new Gson();
     private ServerSocket serverSocket;
@@ -43,6 +50,10 @@ public class Server {
             jmdns.registerService(serviceInfo);
             logger.info("Service registered on address {} at port {}", ipAddress.getHostAddress(), port);
         }
+    }
+
+    public void addListener(ServerListener listener) {
+        listeners.add(listener);
     }
 
     /**
@@ -91,10 +102,18 @@ public class Server {
         }
     }
 
+
+
     /**
      * Handles communication with a single client.
      */
-    private record ClientHandler(Socket clientSocket, int year) implements Runnable {
+    private class ClientHandler implements Runnable {
+        Socket clientSocket;
+        int year;
+        ClientHandler(Socket clientSocket, int year) {
+            this.clientSocket = clientSocket;
+            this.year = year;
+        }
 
         @Override
         public void run() {
@@ -120,6 +139,10 @@ public class Server {
                     DatabaseManager databaseManager = new DatabaseManager(year);
 
                     String data = jsonObject.get("data").toString();
+
+                    for (ServerListener listener: listeners)
+                        listener.receivedData(clientMessage);
+
 
                     switch (header) {
                         case "match":
