@@ -6,6 +6,7 @@ build/
 !**/src/test/**/build/
 */**/Main.java
 *.xml
+src/main/resources/APIKeys.json
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

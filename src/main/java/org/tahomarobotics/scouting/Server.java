@@ -34,9 +34,10 @@ public class Server {
     /**
      * Constructs a Server instance and optionally registers the service on the specified port.
      *
-     * @param port    The port on which the server will listen for connections.
-     * @param useMdns Whether to register the service using mDNS.
-     * @param year    The year that the season is currently.
+     * @param port      The port on which the server will listen for connections.
+     * @param useMdns   Whether to register the service using mDNS.
+     * @param year      The year that the season is currently.
+     * @param ipAddress The IP address to bind the service to.
      * @throws IOException If an I/O error occurs when opening the socket or registering the service.
      */
     public Server(int port, boolean useMdns, int year, InetAddress ipAddress) throws IOException {
@@ -73,7 +74,7 @@ public class Server {
         logger.info("Server started. Waiting for connections...");
 
         try {
-            while (true) {
+            while (!serverSocket.isClosed()) {
                 Socket clientSocket = serverSocket.accept();
                 logger.info("Client connected: {}", clientSocket.getInetAddress());
                 // Start a new thread to handle the client connection
@@ -81,6 +82,8 @@ public class Server {
             }
         } catch (IOException e) {
             logger.error("Error accepting client connection", e);
+        } finally {
+            stop();
         }
     }
 
@@ -90,13 +93,14 @@ public class Server {
      */
     public void stop() {
         try {
-            if (serverSocket != null) {
+            if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
-                if (jmdns != null) {
-                    jmdns.unregisterAllServices();
-                }
-                logger.info("Server stopped and service unregistered.");
             }
+            if (jmdns != null) {
+                jmdns.unregisterAllServices();
+                jmdns.close();
+            }
+            logger.info("Server stopped and service unregistered.");
         } catch (IOException e) {
             logger.error("Error stopping server", e);
         }
@@ -155,11 +159,8 @@ public class Server {
                             break;
                         default:
                             logger.error("\"{}\" is not a valid header!", header);
-                            continue;
                     }
-
                 }
-
             } catch (Exception e) {
                 logger.error("Error handling client", e);
             }
@@ -174,9 +175,7 @@ public class Server {
                 clientMessageBuilder.append((char) byteRead);
             }
 
-            // Convert the received byte sequence to a single string (the full JSON message)
-            String clientMessage = clientMessageBuilder.toString();
-            return clientMessage;
+            return clientMessageBuilder.toString();
         }
     }
 }

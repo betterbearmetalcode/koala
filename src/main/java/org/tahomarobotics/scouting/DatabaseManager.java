@@ -4,6 +4,7 @@ import com.google.gson.*;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bson.Document;
@@ -23,6 +24,11 @@ public class DatabaseManager {
     private final int year;
     private final MongoClient mongoClient;
 
+    /**
+     * Constructs a DatabaseManager for a specific year.
+     *
+     * @param year the year for which the database manager is being created.
+     */
     public DatabaseManager(int year) {
         this.year = year;
         this.mongoClient = MongoClients.create(CONNECTION_STRING);
@@ -35,8 +41,6 @@ public class DatabaseManager {
     private static final Logger logger = LoggerFactory.getLogger(DatabaseManager.class);
     private static final Gson gson = new Gson();
 
-    // Public methods
-
     /**
      * Gets the real database name for the specified season.
      *
@@ -46,12 +50,10 @@ public class DatabaseManager {
         return DATABASE_PREFIX + year;
     }
 
-    // Methods for adding teams to the database
-
     /**
      * Processes a JSON string representing team details and ensures the team is in the database.
      *
-     * @param teamJson a JSON string containing team details. Should be similar to TBA data
+     * @param teamJson a JSON string containing team details. Should be similar to TBA data.
      */
     public void processTeamJson(String teamJson) {
         if (teamJson == null) {
@@ -109,7 +111,7 @@ public class DatabaseManager {
     /**
      * Gets the details of a team from their key and adds it to the database.
      *
-     * @param key the team key of the team to process
+     * @param key the team key of the team to process.
      */
     public void processTeamFromKey(String key) {
         String teamJson = TBAInterface.getTBAData("/team/" + key);
@@ -122,7 +124,7 @@ public class DatabaseManager {
     }
 
     /**
-     * Gets the teams for a specified event, then adds them into the database
+     * Gets the teams for a specified event, then adds them into the database.
      *
      * @param eventKey the event key to get teams for. A valid event key looks like this: "2025wasno" (PNW District Glacier Peak Event 2025).
      */
@@ -146,7 +148,7 @@ public class DatabaseManager {
     }
 
     /**
-     * Gets team keys from an arraylist and adds their details to the database. Useful for off season events or when there is no data from TBA on an event
+     * Gets team keys from an arraylist and adds their details to the database. Useful for off season events or when there is no data from TBA on an event.
      *
      * @param teams an arraylist of teams to add. The arraylist should be team keys. Example: [frc2046, frc1678, frc2910].
      */
@@ -155,8 +157,6 @@ public class DatabaseManager {
             processTeamFromKey(i);
         }
     }
-
-    // Methods for adding matches to the database
 
     /**
      * Processes a JSON string representing match details from the main scout (scouting one individual team).
@@ -197,8 +197,13 @@ public class DatabaseManager {
         }
     }
 
-    // Methods for getting things from the database
-
+    /**
+     * Gets matches from a team for a specific event.
+     *
+     * @param teamKey  the team key to filter matches.
+     * @param eventKey the event key to filter matches.
+     * @return a list of matches for the specified team and event.
+     */
     public List<HashMap<String, Object>> getMatchesFromTeam(String teamKey, String eventKey) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection("mainScout");
@@ -207,22 +212,16 @@ public class DatabaseManager {
                 Filters.eq("team_key", teamKey),
                 Filters.eq("event_key", eventKey)
         );
-        MongoCursor<Document> cursor = collection.find(filter).iterator();
-        List<HashMap<String, Object>> documentsList = new ArrayList<>();
-
-        try {
-            while (cursor.hasNext()) {
-                Document document = cursor.next();
-                HashMap<String, Object> map = JsonUtil.getHashMapFromJson(document.toJson());
-                documentsList.add(map);
-            }
-        } finally {
-            cursor.close();
-        }
-
-        return documentsList;
+        return getHashMaps(collection, filter);
     }
 
+    /**
+     * Gets teams from a specific match for a specific event.
+     *
+     * @param matchNumber the match number to filter teams.
+     * @param eventKey    the event key to filter teams.
+     * @return a list of teams for the specified match and event.
+     */
     public List<HashMap<String, Object>> getTeamsFromMatch(int matchNumber, String eventKey) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection("mainScout");
@@ -231,6 +230,18 @@ public class DatabaseManager {
                 Filters.eq("match_num", matchNumber),
                 Filters.eq("event_key", eventKey)
         );
+        return getHashMaps(collection, filter);
+    }
+
+    /**
+     * Converts MongoDB documents to a list of hash maps based on a filter.
+     *
+     * @param collection the MongoDB collection to query.
+     * @param filter     the filter to apply to the query.
+     * @return a list of hash maps representing the documents.
+     */
+    @NotNull
+    private List<HashMap<String, Object>> getHashMaps(MongoCollection<Document> collection, Bson filter) {
         MongoCursor<Document> cursor = collection.find(filter).iterator();
         List<HashMap<String, Object>> documentsList = new ArrayList<>();
 
@@ -247,12 +258,24 @@ public class DatabaseManager {
         return documentsList;
     }
 
-    // Private methods
-
+    /**
+     * Gets a string value from a JSON object.
+     *
+     * @param jsonObject the JSON object to extract the value from.
+     * @param key        the key of the value to extract.
+     * @return the string value, or null if the key does not exist or the value is null.
+     */
     private String getStringValue(JsonObject jsonObject, String key) {
         return jsonObject.has(key) && !jsonObject.get(key).isJsonNull() ? jsonObject.get(key).getAsString() : null;
     }
 
+    /**
+     * Gets an integer value from a JSON object.
+     *
+     * @param jsonObject the JSON object to extract the value from.
+     * @param key        the key of the value to extract.
+     * @return the integer value, or 0 if the key does not exist or the value is null.
+     */
     private int getIntValue(JsonObject jsonObject, String key) {
         return jsonObject.has(key) && !jsonObject.get(key).isJsonNull() ? jsonObject.get(key).getAsInt() : 0;
     }
