@@ -10,11 +10,13 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 
+import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,11 @@ public class Client {
         return connected;
     }
 
+    /**
+     * Constructs a Client instance and initializes the JmDNS instances.
+     *
+     * @throws IOException If an I/O error occurs when creating the JmDNS instances.
+     */
     public Client() throws IOException {
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         
@@ -80,10 +87,15 @@ public class Client {
                 public void serviceResolved(ServiceEvent event) {
                     ServiceInfo info = event.getInfo();
                     if (info.getHostAddresses().length > 0 && info.getPort() > 0) {
-                        logger.info("Service resolved: {}", info.getQualifiedName());
-                        connectByIP(info.getHostAddresses()[0], info.getPort());
+                        String ipAddress = info.getHostAddresses()[0];
+                        logger.info("Service resolved: {}, {}:{}", info.getQualifiedName(), ipAddress, info.getPort());
+                        try {
+                            connectByIP(InetAddress.getByName(ipAddress), info.getPort());
+                        } catch (UnknownHostException e) {
+                            logger.error("Failed to connect to {}:{}", ipAddress, info.getPort(), e);
+                        }
                     } else {
-                        logger.warn("Service resolution incomplete: {}", info.getQualifiedName());
+                        logger.warn("Service resolved, but no IP address or port: {}", info.getQualifiedName());
                     }
                 }
             });
@@ -96,12 +108,12 @@ public class Client {
      * @param ip the ip of the server
      * @param port the port the server is listening on
      */
-    public void connectByIP(String ip, int port) {
+    public void connectByIP(InetAddress ip, int port) {
         try {
             socket = new Socket(ip, port);
             connected = true;
             logger.info("Connected to {}:{}", ip, port);
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Failed to connect to {}:{}", ip, port, e);
         }
     }
@@ -137,20 +149,25 @@ public class Client {
     public void sendData(String data, String... headers) {
         if (connected) {
             try {
+                // Check if data is a valid JSON string
+                JsonParser.parseString(data);
+    
                 OutputStream out = socket.getOutputStream();
                 OutputStreamWriter writer = new OutputStreamWriter(out);
                 StringBuilder pendingData = new StringBuilder("{ \"header\": {\n");
                 List<String> headersAsList = Arrays.stream(headers).toList();
                 for (String header : headers) {
-                    //Format : "h[indexOfHeader] : "header" \n
+                    // Format : "h[indexOfHeader] : "header" \n
                     pendingData.append("\"h").append(headersAsList.indexOf(header)).append("\" : \"").append(header).append("\",\n");
                 }
-                pendingData.deleteCharAt(pendingData.length()-2);
+                pendingData.deleteCharAt(pendingData.length() - 2);
                 pendingData.append("},\n \"data\" : ").append(data).append("}");
-
+    
                 writer.write(pendingData.toString() + '\u0003');
                 writer.flush();
                 logger.info("Data sent: {}", pendingData.toString());
+            } catch (com.google.gson.JsonParseException e) {
+                logger.error("Invalid JSON data: {}", data, e);
             } catch (IOException e) {
                 logger.error("Failed to send data", e);
             }
