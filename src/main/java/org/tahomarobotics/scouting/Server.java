@@ -170,7 +170,7 @@ public class Server {
             StringBuilder clientMessageBuilder = new StringBuilder();
             int byteRead;
 
-            while ((byteRead = inputStream.read()) != '\u0003') {
+            while ((byteRead = inputStream.read()) != '\u0003' && byteRead != -1) {
                 clientMessageBuilder.append((char) byteRead);
             }
 
