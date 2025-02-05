@@ -1,0 +1,58 @@
+{
+  "team_key": "frc2046",
+  "match_key": "2024orsal_qm2",
+  "event_key": "2024orsal",
+  "auto": {
+    "algae_removed": 1,
+    "algae_processed": 1,
+    "net_scored": 1,
+    "net_missed": 1,
+    "coral_scored": {
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 1
+    },
+    "coral_missed": {
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 1
+    },
+    "auto_collected": {
+      "feeder_station": 1,
+      "coral_3": 1,
+      "coral_2": 1,
+      "coral_1": 1,
+      "algae_3": 1,
+      "algae_2": 1,
+      "algae_1": 1
+    }
+  },
+  "tele": {
+    "algae_removed": 1,
+    "algae_processed": 1,
+    "net_scored": 1,
+    "net_missed": 1,
+    "coral_scored": {
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 1
+    },
+    "coral_missed": {
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 1
+    },
+    "misc": {
+      "played_defense": true,
+      "lost_comms": true
+    }
+  },
+  "endgame": {
+    "deep": true,
+    "location": 1
+  }
+}
