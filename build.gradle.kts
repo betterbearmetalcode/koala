@@ -14,8 +14,8 @@ dependencies {
     implementation("org.jetbrains:annotations:24.0.0")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("ch.qos.logback:logback-classic:1.5.15")
     implementation("org.jmdns:jmdns:3.6.0")
-    implementation("ch.qos.logback:logback-classic:1.5.15")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("org.mongodb:mongodb-driver-sync:5.2.1")
 }
