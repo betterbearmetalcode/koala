@@ -155,7 +155,8 @@ public class Client {
                 OutputStream out = socket.getOutputStream();
                 OutputStreamWriter writer = new OutputStreamWriter(out);
                 StringBuilder pendingData = new StringBuilder("{ \"header\": {\n");
-                List<String> headersAsList = Arrays.stream(headers).toList();
+                List<String> headersAsList = new ArrayList<String>(Arrays.asList(headers));
+
                 for (String header : headers) {
                     // Format : "h[indexOfHeader] : "header" \n
                     pendingData.append("\"h").append(headersAsList.indexOf(header)).append("\" : \"").append(header).append("\",\n");
