@@ -75,18 +75,29 @@ public class TBAInterface {
     // Private Method
 
     private static String apiKey() {
-        Gson gson = new Gson();
-        try (InputStream inputStream = TBAInterface.class.getClassLoader().getResourceAsStream("APIKeys.json")) {
-            if (inputStream == null) {
-                logger.error("APIKeys.json file not found in the resources directory.");
-                return null;
-            }
-            InputStreamReader reader = new InputStreamReader(inputStream);
-            var apiKeys = gson.fromJson(reader, Map.class);
-            return (String) apiKeys.get("apiKeyTBA");
-        } catch (IOException e) {
-            logger.error("Failed to read APIKeys.json from resources: ", e);
+        String keyEnvVar = System.getenv("KOALA_TBA_API_KEY");
+        
+        if (keyEnvVar == null) {
+            logger.error("API key not found in environment variable KOALA_TBA_API_KEY. Please add it if you want to use the TBA API.");
             return null;
+        } else {
+            return keyEnvVar;
         }
+        
+        // OLD CODE THAT COULD BE REMOVED BUT IS STILL HERE BECAUSE MAYBE WE WANT TO USE IT IN THE FUTURE
+        
+//        Gson gson = new Gson();
+//        try (InputStream inputStream = TBAInterface.class.getClassLoader().getResourceAsStream("APIKeys.json")) {
+//            if (inputStream == null) {
+//                logger.error("APIKeys.json file not found in the resources directory.");
+//                return null;
+//            }
+//            InputStreamReader reader = new InputStreamReader(inputStream);
+//            var apiKeys = gson.fromJson(reader, Map.class);
+//            return (String) apiKeys.get("apiKeyTBA");
+//        } catch (IOException e) {
+//            logger.error("Failed to read APIKeys.json from resources: ", e);
+//            return null;
+//        }
     }
 }
