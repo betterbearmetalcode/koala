@@ -12,3 +12,46 @@ Koala is a highly customized data transfer, database manager, and TBA data fetch
 - Data is sent in JSON through sockets
 - Because FRC rules (and therefore scoring) changes each year, the beginning of the packet will display what year, and therefore what game, we are scoring for.
 - Along with the year, we will send an identifier for the match on The Blue Alliance
+
+# Installation
+### Gradle
+
+```
+  repositories {
+      mavenCentral()
+      maven { url 'https://jitpack.io' }
+  }
+  dependencies {
+      implementation 'com.github.betterbearmetalcode:koala:$version'
+  }
+```
+
+#### Kotlin Gradle
+
+```
+  repositories {
+      mavenCentral()
+      maven("https://jitpack.io")
+  }
+  dependencies {
+      implementation("com.github.betterbearmetalcode:koala:$version")
+  }
+```
+
+### Maven
+
+```
+<repositories>
+  <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+  </repository>
+</repositories>
+```
+```
+<dependency>
+    <groupId>com.github.betterbearmetalcode</groupId>
+    <artifactId>koala</artifactId>
+    <version>$version</version>
+</dependency>
+```
