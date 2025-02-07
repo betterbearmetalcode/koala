@@ -12,8 +12,6 @@ import java.net.http.HttpResponse;
 public class TBAInterface {
     private static final Logger LOGGER = LoggerFactory.getLogger(TBAInterface.class);
 
-    // Public Methods
-
     /**
      * Base URL for The Blue Alliance API
      */
