@@ -155,7 +155,7 @@ public class Client {
                 OutputStream out = socket.getOutputStream();
                 OutputStreamWriter writer = new OutputStreamWriter(out);
                 StringBuilder pendingData = new StringBuilder("{ \"header\": {\n");
-                List<String> headersAsList = new ArrayList<String>(Arrays.asList(headers));
+                List<String> headersAsList = new ArrayList<>(Arrays.asList(headers));
 
                 for (String header : headers) {
                     // Format : "h[indexOfHeader] : "header" \n
@@ -166,7 +166,7 @@ public class Client {
     
                 writer.write(pendingData.toString() + '\u0003');
                 writer.flush();
-                logger.info("Data sent: {}", pendingData.toString());
+                logger.info("Data sent: {}", pendingData);
             } catch (com.google.gson.JsonParseException e) {
                 logger.error("Invalid JSON data: {}", data, e);
             } catch (IOException e) {
