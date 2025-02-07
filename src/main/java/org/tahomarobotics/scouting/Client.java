@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class Client {
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
     private Socket socket;
-    private final ArrayList<JmDNS> jmdnss = new ArrayList<>();
+    private final ArrayList<JmDNS> jmdnses = new ArrayList<>();
     private boolean connected = false;
 
     /**
@@ -55,7 +55,7 @@ public class Client {
                 if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
                     logger.info("Local Network IP: {}", address.getHostAddress());
                     JmDNS jmdns = JmDNS.create(address);
-                    jmdnss.add(jmdns);
+                    jmdnses.add(jmdns);
                 }
             }
         }
@@ -65,7 +65,7 @@ public class Client {
      * Discovers and connects to the koala service.
      */
     public void discoverAndConnect() {
-        for (JmDNS jmdns: jmdnss) {
+        for (JmDNS jmdns: jmdnses) {
             jmdns.addServiceListener("_http._tcp.local.", new ServiceListener() {
                 @Override
                 public void serviceAdded(ServiceEvent event) {

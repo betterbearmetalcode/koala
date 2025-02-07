@@ -32,8 +32,6 @@ public class TBAInterface {
         try {
             // Construct the full URI by combining the base server URL and the endpoint
             URI object = new URI(TBA_API + endpoint);
-
-            System.out.println(getConfig());
             
             HttpResponse<String> response;
 

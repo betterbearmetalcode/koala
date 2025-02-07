@@ -1,4 +1,4 @@
-![A graphic showing the TBA (The Blue Alliance) Logo, a Laptop, and a Phone connected wirelessly](/docs/assets/readme-graphic.png)
+![A graphic showing the TBA (The Blue Alliance) Logo, a Laptop, and a Phone connected through wifi](/docs/assets/readme-graphic.png)
 # Koala
 [![JitPack](https://jitpack.io/v/betterbearmetalcode/koala.svg)](https://jitpack.io/#betterbearmetalcode/koala)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/w/betterbearmetalcode/koala)](https://github.com/betterbearmetalcode/koala/commits/main/)
