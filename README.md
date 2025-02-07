@@ -61,7 +61,3 @@ dependencies {
     <version>$version</version>
 </dependency>
 ```
-
-# How to use the built-in TBA API fetcher
-TBA requires an API key to access their data. If you don't have one yet, go to [their website](https://www.thebluealliance.com/) and create an account. Once you have an account, go to your account settings and create a new read-only API key.
-Next, set the environment variable `KOALA_TBA_API_KEY` to your API key. Done! Now you can use the TBA fetcher.
