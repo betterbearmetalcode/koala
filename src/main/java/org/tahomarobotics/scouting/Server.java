@@ -20,13 +20,13 @@ import java.util.List;
  * A server that listens for client connections and registers a service using JmDNS.
  */
 public class Server {
-    private List<ServerListener> listeners = new ArrayList<>();
+    private final List<ServerListener> listeners = new ArrayList<>();
     public interface ServerListener extends EventListener {
         void receivedData(String data);
     }
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
     private static final Gson gson = new Gson();
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
     private JmDNS jmdns;
 
     private final int year;
@@ -53,6 +53,11 @@ public class Server {
         }
     }
 
+    /**
+     * Adds a listener to the server that is called when data is received
+     *
+     * @param listener The listener to be added
+     */
     public void addListener(ServerListener listener) {
         listeners.add(listener);
     }
