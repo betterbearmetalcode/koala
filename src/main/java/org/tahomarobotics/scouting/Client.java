@@ -28,6 +28,7 @@ public class Client {
     private Socket socket;
     private final ArrayList<JmDNS> jmdnss = new ArrayList<>();
     private boolean connected = false;
+    private String serverName = "";
 
     /**
      * Returns whether the client has connected to the server
@@ -81,6 +82,8 @@ public class Client {
                 @Override
                 public void serviceRemoved(ServiceEvent event) {
                     logger.info("Service removed: {}", event.getName());
+                    if (event.getName().equals(serverName))
+                        connected = false;
                 }
 
                 @Override
@@ -112,6 +115,17 @@ public class Client {
         try {
             socket = new Socket(ip, port);
             connected = true;
+            logger.info("Connected to {}:{}", ip, port);
+        } catch (Exception e) {
+            logger.error("Failed to connect to {}:{}", ip, port, e);
+        }
+    }
+
+    private void connectByIP(InetAddress ip, int port, ServiceEvent event) {
+        try {
+            socket = new Socket(ip, port);
+            connected = true;
+            serverName = event.getName();
             logger.info("Connected to {}:{}", ip, port);
         } catch (Exception e) {
             logger.error("Failed to connect to {}:{}", ip, port, e);
