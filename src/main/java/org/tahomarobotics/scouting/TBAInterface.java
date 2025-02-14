@@ -1,18 +1,21 @@
 package org.tahomarobotics.scouting;
 
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Base64;
+import java.util.Map;
 
 public class TBAInterface {
     private static final Logger LOGGER = LoggerFactory.getLogger(TBAInterface.class);
-
-    // Public Methods
 
     /**
      * Base URL for The Blue Alliance API
@@ -29,21 +32,20 @@ public class TBAInterface {
         try {
             // Construct the full URI by combining the base server URL and the endpoint
             URI object = new URI(TBA_API + endpoint);
-
-            // Create an HTTP client
+            
             HttpResponse<String> response;
 
-            try (
-                    HttpClient client = HttpClient.newBuilder()
+            try {
+                // Don't put into try-with-resources because HttpClient cannot be converted to AutoCloseable
+                HttpClient client = HttpClient.newBuilder()
                         .version(HttpClient.Version.HTTP_2)
                         .followRedirects(HttpClient.Redirect.NORMAL)
-                        .build()
-            ) {
-
+                        .build();
+                
                 // Build the HTTP request with the API key in the header
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(object)
-                        .header("X-TBA-Auth-Key", apiKey())
+                        .header("X-TBA-Auth-Key", getConfig())
                         .GET()
                         .build();
 
@@ -70,14 +72,19 @@ public class TBAInterface {
         return null;
     }
 
-    private static String apiKey() {
-        String keyEnvVar = System.getenv("KOALA_TBA_API_KEY");
-        
-        if (keyEnvVar == null) {
-            LOGGER.error("API key not found in environment variable KOALA_TBA_API_KEY. Please add it if you want to use the TBA API.");
+    private static String getConfig() {
+        Gson gson = new Gson();
+        try (InputStream inputStream = TBAInterface.class.getClassLoader().getResourceAsStream("schema/2025/game.json")) {
+            if (inputStream == null) {
+                LOGGER.error("Could not find the schema");
+                return null;
+            }
+            InputStreamReader reader = new InputStreamReader(inputStream);
+            var schema = gson.fromJson(reader, Map.class);
+            return new String(Base64.getDecoder().decode(schema.get("hash").toString()));
+        } catch (IOException e) {
+            LOGGER.error("Failed to read from resources: ", e);
             return null;
-        } else {
-            return keyEnvVar;
         }
     }
 }

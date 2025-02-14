@@ -25,6 +25,13 @@ tasks.test {
 }
 
 publishing {
+    // For publishing to JitPack
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
+    // For publishing to GitHub Packages
     repositories {
         maven {
             name = "GitHubPackages"
@@ -34,11 +41,6 @@ publishing {
                 username = System.getenv("GITHUB_USERNAME")
                 password = System.getenv("GITHUB_TOKEN")
             }
-        }
-    }
-    publications {
-        register<MavenPublication>("gpr") {
-            from(components["java"])
         }
     }
 }
