@@ -2,7 +2,10 @@ package org.tahomarobotics.scouting;
 
 import com.google.gson.*;
 import com.mongodb.client.*;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.vault.RangeOptions;
+import org.bson.BsonObjectId;
 import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -10,9 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.bson.Document;
 import org.tahomarobotics.scouting.util.JsonUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import javax.swing.*;
+import java.util.*;
 
 /**
  * DatabaseManager manages CRUD operations for scouting data in a MongoDB database.
@@ -55,12 +57,12 @@ public class DatabaseManager {
      *
      * @param teamJson a JSON string containing team details. Should be similar to TBA data.
      */
-    public void processTeamJson(String teamJson) {
+    public void processTeamJson(String teamJson, String... events) {
         if (teamJson == null) {
             logger.warn("Team JSON is null.");
             return;
         }
-
+        
         JsonObject teamObject = gson.fromJson(teamJson, JsonObject.class);
 
         // Data to grab from JSON
@@ -87,6 +89,7 @@ public class DatabaseManager {
             Document teamDoc = new Document("key", key)
                     .append("team_number", teamNumber)
                     .append("nickname", nickname)
+                    .append("events", Arrays.asList(events))
                     .append("name", name)
                     .append("school_name", schoolName)
                     .append("city", city)
@@ -107,17 +110,41 @@ public class DatabaseManager {
             logger.info("Team {} ({}) already exists in the database.", nickname, key);
         }
     }
+    
+    /**
+     * Adds events to a team in the database.
+     *
+     * @param teamKey the team key to add events to.
+     * @param events  the events to add.
+     */
+    public void addEventsToTeam(String teamKey, String... events) {
+        MongoDatabase database = mongoClient.getDatabase(getDBName());
+        MongoCollection<Document> collection = database.getCollection("teams");
+    
+        Document existingTeam = collection.find(new Document("key", teamKey)).first();
+        if (existingTeam == null) {
+            logger.warn("Team {} does not exist in the database.", teamKey);
+            return;
+        }
+        
+        List<String> existingEvents = existingTeam.getList("events", String.class, new ArrayList<>());
+        existingEvents.addAll(Arrays.asList(events));
+        existingEvents = new ArrayList<>(new HashSet<>(existingEvents)); // Remove duplicates
+        
+        collection.updateOne(Filters.eq("key", teamKey), new Document("$set", new Document("events", existingEvents)));
+        logger.info("Added events to team {}: {}", teamKey, Arrays.toString(events));
+    }
 
     /**
      * Gets the details of a team from their key and adds it to the database.
      *
      * @param key the team key of the team to process.
      */
-    public void processTeamFromKey(String key) {
+    public void processTeamFromKey(String key, String... events) {
         String teamJson = TBAInterface.getTBAData("/team/" + key);
 
         if (teamJson != null) {
-            processTeamJson(teamJson);
+            processTeamJson(teamJson, events);
         } else {
             logger.error("TBA didn't return data. Does the team {} exist?", key);
         }
@@ -140,7 +167,7 @@ public class DatabaseManager {
             JsonArray jsonArray = JsonParser.parseString(teamObjects).getAsJsonArray();
 
             for (JsonElement element : jsonArray) {
-                processTeamJson(element.toString());
+                processTeamJson(element.toString(), eventKey);
             }
         } else {
             logger.warn("Event key {} is not for the year {}.", eventKey, year);
@@ -157,7 +184,7 @@ public class DatabaseManager {
             processTeamFromKey(i);
         }
     }
-
+    
     /**
      * Processes a JSON string representing match details from the main scout (scouting one individual team).
      *
@@ -232,7 +259,96 @@ public class DatabaseManager {
         );
         return getHashMaps(collection, filter);
     }
+    
+    /**
+     * Gets teams from a specific event.
+     *
+     * @param eventKey the event key to filter teams.
+     * @return a map of team numbers and their names for the specified event.
+     */
+    public HashMap<Integer, String> getTeamsFromEvent(String eventKey) {
+        MongoDatabase database = mongoClient.getDatabase(getDBName());
+        MongoCollection<Document> collection = database.getCollection("mainScout");
+    
+        Bson filter = Filters.eq("event_key", eventKey);
+        List<HashMap<String, Object>> documentsList = getHashMaps(collection, filter);
+        
+        HashMap<Integer, String> teams = new HashMap<>();
+        Set<String> teamKeys = new HashSet<>();
+        
+        for (HashMap<String, Object> document : documentsList) {
+            String teamKey = (String) document.get("team_key");
+            if (teamKey != null) {
+                teamKeys.add(teamKey);
+            }
+        }
+        
+        MongoCollection<Document> teamCollection = database.getCollection("teams");
+        for (String teamKey : teamKeys) {
+            Document teamDocument = teamCollection.find(new Document("key", teamKey)).first();
+            if (teamDocument != null) {
+                String teamName = teamDocument.getString("nickname");
+                if (teamName != null) {
+                    int teamNumber = Integer.parseInt(teamKey.substring(3));
+                    teams.put(teamNumber, teamName);
+                }
+            } else {
+                logger.warn("Team document not found for key: {}", teamKey);
+            }
+        }
+        
+        return teams;
+    }
+    
+    /**
+     * Gets matches from a specific event.
+     *
+     * @param eventKey the event key to filter matches.
+     * @return a list of matches for the specified event.
+     */
+    public List<HashMap<String, Object>> getMatchesFromEvent(String eventKey) {
+        MongoDatabase database = mongoClient.getDatabase(getDBName());
+        MongoCollection<Document> collection = database.getCollection("mainScout");
 
+        Bson filter = Filters.eq("event_key", eventKey);
+        return getHashMaps(collection, filter);
+    }
+    
+    /**
+     * Gets the keys of a random document in the main scout collection. It also formats subkeys to be more readable.
+     *
+     * @return an array of keys
+     */
+    public String[] getKeysForMainScout() {
+        MongoDatabase database = mongoClient.getDatabase(getDBName());
+        MongoCollection<Document> collection = database.getCollection("mainScout");
+        
+        Document random = collection.aggregate(List.of(Aggregates.sample(1))).first();
+        
+        if (random == null) {
+            logger.warn("No documents found in mainScout collection for the year {}.", year);
+            return new String[0];
+        }
+    
+        List<String> keys = new ArrayList<>();
+        
+        for (String key : random.keySet()) {
+            if (key.equals("_id") || key.equals("team_key") || key.equals("event_key") || key.equals("match_num")) {
+                continue;
+            }
+            Object value = random.get(key);
+            if (value instanceof Document subDoc) {
+                for (String subKey : subDoc.keySet()) {
+                    keys.add(key + "_" + subKey);
+                }
+            } else {
+                keys.add(key);
+            }
+        }
+    
+        return keys.toArray(new String[0]);
+    }
+    
     /**
      * Converts MongoDB documents to a list of hash maps based on a filter.
      *
@@ -248,7 +364,7 @@ public class DatabaseManager {
         try {
             while (cursor.hasNext()) {
                 Document document = cursor.next();
-                HashMap<String, Object> map = JsonUtil.getHashMapFromJson(document.toJson());
+                HashMap<String, Object> map = new HashMap<>(document);
                 documentsList.add(map);
             }
         } finally {
