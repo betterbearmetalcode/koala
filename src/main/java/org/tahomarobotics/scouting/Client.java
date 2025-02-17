@@ -1,9 +1,12 @@
 package org.tahomarobotics.scouting;
 
+import javax.imageio.ImageIO;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -133,6 +136,29 @@ public class Client {
                 logger.info("Data sent: {}", data);
             } catch (IOException e) {
                 logger.error("Failed to send data", e);
+            }
+        } else {
+            logger.warn("Not connected to a server.");
+        }
+    }
+
+    /**
+     * An overload of sendData to send images
+     *
+     * @param image the image to send
+     * @param imageType the extension type of the image, i.e. "png", "jpg", etc.
+     */
+    public void sendData(BufferedImage image, String imageType) {
+        if (connected) {
+            try {
+                OutputStream out = socket.getOutputStream();
+                OutputStreamWriter writer = new OutputStreamWriter(out);
+                ImageIO.write(image, imageType, out);
+                writer.write('\u0003');
+                out.flush();
+                logger.info("Image sent of type: {}", imageType);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         } else {
             logger.warn("Not connected to a server.");

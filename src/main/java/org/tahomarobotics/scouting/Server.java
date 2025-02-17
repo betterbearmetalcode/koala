@@ -134,14 +134,20 @@ public class Server {
 
                     JsonObject jsonObject = gson.fromJson(clientMessage, JsonObject.class);
 
-                    JsonElement headerElement = jsonObject.get("header");
+                    String header = "";
+                    try {
+                        JsonElement headerElement = jsonObject.get("header");
 
-                    if (headerElement == null) {
-                        logger.error("No header in json data. Skipping...");
-                        continue;
+                        if (headerElement == null) {
+                            logger.error("No header in json data. Skipping...");
+                            continue;
+                        }
+
+                        header = headerElement.getAsJsonObject().get("h0").getAsString();
+                    } catch (NullPointerException e) {
+                        logger.warn("No headers received");
                     }
 
-                    String header = headerElement.getAsJsonObject().get("h0").getAsString();
 
                     DatabaseManager databaseManager = new DatabaseManager(year);
 
@@ -161,7 +167,7 @@ public class Server {
                         case "pit":
                             break;
                         default:
-                            logger.error("\"{}\" is not a valid header!", header);
+                            logger.warn("\"{}\" is not a valid header!", header);
                     }
                 }
             } catch (Exception e) {
