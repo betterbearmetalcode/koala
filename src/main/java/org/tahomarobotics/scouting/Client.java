@@ -7,9 +7,7 @@ import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
@@ -145,18 +143,21 @@ public class Client {
     /**
      * An overload of sendData to send images
      *
-     * @param image the image to send
-     * @param imageType the extension type of the image, i.e. "png", "jpg", etc.
+     * @param file the file to send
      */
-    public void sendData(BufferedImage image, String imageType) {
+    public void sendData(File file) {
         if (connected) {
             try {
                 OutputStream out = socket.getOutputStream();
                 OutputStreamWriter writer = new OutputStreamWriter(out);
-                ImageIO.write(image, imageType, out);
+                FileReader reader = new FileReader(file);
+                int line;
+                while ((line = reader.read()) != -1) {
+                    writer.write(line);
+                }
                 writer.write('\u0003');
                 out.flush();
-                logger.info("Image sent of type: {}", imageType);
+                reader.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
