@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "org.tahomarobotics.scouting"
-version = "1.1.0"
+version = "dev-02.17.2025-1340"
 
 repositories {
     mavenCentral()
