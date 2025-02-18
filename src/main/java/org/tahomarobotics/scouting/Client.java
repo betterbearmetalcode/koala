@@ -152,6 +152,7 @@ public class Client {
                 OutputStreamWriter writer = new OutputStreamWriter(out);
                 FileReader reader = new FileReader(file);
                 int line;
+                writer.write("fn: " + file.getName());
                 while ((line = reader.read()) != -1) {
                     writer.write(line);
                 }
