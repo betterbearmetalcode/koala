@@ -6,8 +6,10 @@ import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -132,46 +134,80 @@ public class Server {
                     // Print the received message
                     logger.info("Received from client: {}", clientMessage);
 
-                    JsonObject jsonObject = gson.fromJson(clientMessage, JsonObject.class);
-
-                    String header = "";
-                    try {
-                        JsonElement headerElement = jsonObject.get("header");
-
-                        if (headerElement == null) {
-                            logger.error("No header in json data. Skipping...");
-                            continue;
-                        }
-
-                        header = headerElement.getAsJsonObject().get("h0").getAsString();
-                    } catch (NullPointerException e) {
-                        logger.warn("No headers received");
-                    }
-
-
-                    DatabaseManager databaseManager = new DatabaseManager(year);
-
-                    String data = jsonObject.get("data").toString();
-
                     for (ServerListener listener: listeners)
                         listener.receivedData(clientMessage);
 
-
-                    switch (header) {
-                        case "match":
-                            databaseManager.processMainScoutJson(data);
-                            break;
-                        case "strat":
-                            databaseManager.processStrategyScoutJson(data);
-                            break;
-                        case "pit":
-                            break;
-                        default:
-                            logger.warn("\"{}\" is not a valid header!", header);
+                    if (clientMessage.startsWith("fn:")) {
+                        handleImage(clientMessage);
+                    } else {
+                        handleData(clientMessage);
                     }
                 }
             } catch (Exception e) {
                 logger.error("Error handling client", e);
+            }
+        }
+
+        private void handleImage(String clientMessage) {
+            int i = 0;
+            StringBuilder fileName = new StringBuilder();
+            boolean nameStarted = false;
+            for (char s : clientMessage.toCharArray()) {
+                if (s == ':')
+                    nameStarted = true;
+                if (nameStarted)
+                    fileName.append(s);
+                if (s == '\n')
+                    break;
+                i++;
+            }
+            String imageData = clientMessage.substring(i+1);
+            File file = new File(fileName.toString());
+            BufferedImage image;
+            try {
+                FileWriter writer = new FileWriter(file);
+                writer.write(imageData);
+                image = ImageIO.read(file);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void handleData(String clientMessage) {
+            JsonObject jsonObject = gson.fromJson(clientMessage, JsonObject.class);
+
+            String header = "";
+            try {
+                JsonElement headerElement = jsonObject.get("header");
+
+                if (headerElement == null) {
+                    logger.error("No header in json data. Skipping...");
+                    return;
+                }
+
+                header = headerElement.getAsJsonObject().get("h0").getAsString();
+            } catch (NullPointerException e) {
+                logger.warn("No headers received");
+            }
+
+
+            DatabaseManager databaseManager = new DatabaseManager(year);
+
+            String data = jsonObject.get("data").toString();
+
+
+
+            switch (header) {
+                case "match":
+                    databaseManager.processMainScoutJson(data);
+                    break;
+                case "strat":
+                    databaseManager.processStrategyScoutJson(data);
+                    break;
+                case "pit":
+                    break;
+                default:
+                    logger.warn("\"{}\" is not a valid header!", header);
             }
         }
 
