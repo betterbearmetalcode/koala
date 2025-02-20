@@ -155,10 +155,10 @@ public class Server {
             for (char s : clientMessage.toCharArray()) {
                 if (s == ':')
                     nameStarted = true;
-                if (nameStarted)
-                    fileName.append(s);
                 if (s == '\n')
                     break;
+                if (nameStarted)
+                    fileName.append(s);
                 i++;
             }
             String imageData = clientMessage.substring(i+1);
