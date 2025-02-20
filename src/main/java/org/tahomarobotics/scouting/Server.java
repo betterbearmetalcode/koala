@@ -138,7 +138,7 @@ public class Server {
                         listener.receivedData(clientMessage);
 
                     if (clientMessage.startsWith("fn:")) {
-                        handleImage(clientMessage);
+                        handleFile(clientMessage);
                     } else {
                         handleData(clientMessage);
                     }
@@ -148,7 +148,7 @@ public class Server {
             }
         }
 
-        private void handleImage(String clientMessage) {
+        private void handleFile(String clientMessage) {
             int i = 0;
             StringBuilder fileName = new StringBuilder();
             boolean nameStarted = false;
