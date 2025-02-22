@@ -30,6 +30,8 @@ public class Server {
     private static final Gson gson = new Gson();
     private final ServerSocket serverSocket;
     private JmDNS jmdns;
+    
+    private boolean running = false;
 
     private final int year;
 
@@ -79,6 +81,7 @@ public class Server {
      */
     public void start() {
         logger.info("Server started. Waiting for connections...");
+        running = true;
 
         try {
             while (!serverSocket.isClosed()) {
@@ -107,10 +110,29 @@ public class Server {
                 jmdns.unregisterAllServices();
                 jmdns.close();
             }
+            running = false;
             logger.info("Server stopped and service unregistered.");
         } catch (IOException e) {
             logger.error("Error stopping server", e);
         }
+    }
+    
+    /**
+     * Returns whether the server is running.
+     *
+     * @return Whether the server is running.
+     */
+    public boolean isRunning() {
+        return running;
+    }
+    
+    /**
+     * Returns the InetAddress of the server.
+     *
+     * @return The InetAddress of the server.
+     */
+    public InetAddress getInetAddress() {
+        return serverSocket.getInetAddress();
     }
 
     /**
