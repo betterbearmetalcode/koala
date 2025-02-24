@@ -227,6 +227,7 @@ public class Server {
                     databaseManager.processStrategyScoutJson(data);
                     break;
                 case "pit":
+                    databaseManager.processPitsJson(data);
                     break;
                 default:
                     logger.warn("\"{}\" is not a valid header!", header);

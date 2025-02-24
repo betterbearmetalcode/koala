@@ -223,6 +223,20 @@ public class DatabaseManager {
             logger.error("Error inserting strategy scout document: {}", e.getMessage());
         }
     }
+    
+    public void processPitsJson(String matchJson) {
+        Document matchDoc = Document.parse(matchJson);
+        MongoDatabase database = mongoClient.getDatabase(getDBName());
+        MongoCollection<Document> collection = database.getCollection("pits");
+
+        // Insert the new pits JSON data into the database
+        try {
+            collection.insertOne(matchDoc);
+            logger.info("Added new pits document from JSON data.");
+        } catch (Exception e) {
+            logger.error("Error inserting pits document: {}", e.getMessage());
+        }
+    }
 
     /**
      * Gets matches from a team for a specific event.
@@ -309,6 +323,20 @@ public class DatabaseManager {
     public List<HashMap<String, Object>> getMatchesFromEvent(String eventKey) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection("mainScout");
+
+        Bson filter = Filters.eq("event_key", eventKey);
+        return getHashMaps(collection, filter);
+    }
+    public List<HashMap<String, Object>> getStratForEvent(String eventKey) {
+        MongoDatabase database = mongoClient.getDatabase(getDBName());
+        MongoCollection<Document> collection = database.getCollection("strategyScout");
+
+        Bson filter = Filters.eq("event_key", eventKey);
+        return getHashMaps(collection, filter);
+    }
+    public List<HashMap<String, Object>> getPitsForEvent(String eventKey) {
+        MongoDatabase database = mongoClient.getDatabase(getDBName());
+        MongoCollection<Document> collection = database.getCollection("pits");
 
         Bson filter = Filters.eq("event_key", eventKey);
         return getHashMaps(collection, filter);
