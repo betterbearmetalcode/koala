@@ -285,13 +285,14 @@ public class DatabaseManager {
         MongoCollection<Document> collection = database.getCollection("mainScout");
     
         Bson filter = Filters.eq("event_key", eventKey);
+
         List<HashMap<String, Object>> documentsList = getHashMaps(collection, filter);
         
         HashMap<Integer, String> teams = new HashMap<>();
         Set<String> teamKeys = new HashSet<>();
         
         for (HashMap<String, Object> document : documentsList) {
-            String teamKey = (String) document.get("team_key");
+            String teamKey = (String) document.get("team");
             if (teamKey != null) {
                 teamKeys.add(teamKey);
             }
