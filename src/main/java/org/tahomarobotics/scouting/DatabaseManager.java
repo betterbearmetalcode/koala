@@ -193,21 +193,20 @@ public class DatabaseManager {
      * @param eventKey the event key to get teams for. A valid event key looks like this: "2025wasno" (PNW District Glacier Peak Event 2025).
      */
     public void processTeamsForEvent(String eventKey) {
-        if (Integer.parseInt(eventKey.substring(0, 4)) == year) {
-            String teamObjects = TBAInterface.getTBAData("/event/" + eventKey + "/teams");
-
-            if (teamObjects == null) {
-                logger.error("TBA didn't return data. Is the event key {} valid?", eventKey);
-                return; // Return because we can't do anything with null data
-            }
-
-            JsonArray jsonArray = JsonParser.parseString(teamObjects).getAsJsonArray();
-
-            for (JsonElement element : jsonArray) {
-                processTeamJson(element.toString(), eventKey);
-            }
-        } else {
+        if (Integer.parseInt(eventKey.substring(0, 4)) != year) {
             logger.warn("Event key {} is not for the year {}.", eventKey, year);
+        }
+        String teamObjects = TBAInterface.getTBAData("/event/" + eventKey + "/teams");
+
+        if (teamObjects == null) {
+            logger.error("TBA didn't return data. Is the event key {} valid?", eventKey);
+            return; // Return because we can't do anything with null data
+        }
+
+        JsonArray jsonArray = JsonParser.parseString(teamObjects).getAsJsonArray();
+
+        for (JsonElement element : jsonArray) {
+            processTeamJson(element.toString(), eventKey);
         }
     }
 
