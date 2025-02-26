@@ -53,6 +53,43 @@ public class DatabaseManager {
     }
 
     /**
+     * Gets all matches from TBA for a specific event and adds them to the database.
+     *
+     * @param eventKey the event key to get matches for.
+     */
+    public void getAllMatchesFromTBA(String eventKey) {
+        String matchesJson = TBAInterface.getTBAData("/event/" + eventKey + "/matches");
+        if (matchesJson == null) {
+            logger.error("TBA didn't return data. Is the event key {} valid?", eventKey);
+            return;
+        }
+
+        MongoDatabase database = mongoClient.getDatabase(getDBName());
+        MongoCollection<Document> collection = database.getCollection("tbaMatches");
+        JsonArray jsonArray = JsonParser.parseString(matchesJson).getAsJsonArray();
+
+        logger.info("Ready to add {} matches to the database.", jsonArray.size());
+        for (JsonElement element : jsonArray) {
+            Document matchDoc = Document.parse(element.toString());
+            String matchKey = matchDoc.getString("key");
+
+            // Check if the match already exists in the database
+            Document existingMatch = collection.find(new Document("key", matchKey)).first();
+            if (existingMatch == null) {
+                try {
+                    collection.insertOne(matchDoc);
+                    logger.info("Added new match document from TBA data.");
+                } catch (Exception e) {
+                    logger.error("Error inserting match document: {}", e.getMessage());
+                }
+            } else {
+                logger.info("Match with key {} already exists in the database.", matchKey);
+            }
+        }
+        logger.info("Added {} matches to the database.", jsonArray.size());
+    }
+
+    /**
      * Processes a JSON string representing team details and ensures the team is in the database.
      *
      * @param teamJson a JSON string containing team details. Should be similar to TBA data.
@@ -62,7 +99,7 @@ public class DatabaseManager {
             logger.warn("Team JSON is null.");
             return;
         }
-        
+
         JsonObject teamObject = gson.fromJson(teamJson, JsonObject.class);
 
         // Data to grab from JSON
@@ -110,7 +147,7 @@ public class DatabaseManager {
             logger.info("Team {} ({}) already exists in the database.", nickname, key);
         }
     }
-    
+
     /**
      * Adds events to a team in the database.
      *
@@ -120,17 +157,17 @@ public class DatabaseManager {
     public void addEventsToTeam(String teamKey, String... events) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection("teams");
-    
+
         Document existingTeam = collection.find(new Document("key", teamKey)).first();
         if (existingTeam == null) {
             logger.warn("Team {} does not exist in the database.", teamKey);
             return;
         }
-        
+
         List<String> existingEvents = existingTeam.getList("events", String.class, new ArrayList<>());
         existingEvents.addAll(Arrays.asList(events));
         existingEvents = new ArrayList<>(new HashSet<>(existingEvents)); // Remove duplicates
-        
+
         collection.updateOne(Filters.eq("key", teamKey), new Document("$set", new Document("events", existingEvents)));
         logger.info("Added events to team {}: {}", teamKey, Arrays.toString(events));
     }
@@ -156,21 +193,20 @@ public class DatabaseManager {
      * @param eventKey the event key to get teams for. A valid event key looks like this: "2025wasno" (PNW District Glacier Peak Event 2025).
      */
     public void processTeamsForEvent(String eventKey) {
-        if (Integer.parseInt(eventKey.substring(0, 4)) == year) {
-            String teamObjects = TBAInterface.getTBAData("/event/" + eventKey + "/teams");
-
-            if (teamObjects == null) {
-                logger.error("TBA didn't return data. Is the event key {} valid?", eventKey);
-                return; // Return because we can't do anything with null data
-            }
-
-            JsonArray jsonArray = JsonParser.parseString(teamObjects).getAsJsonArray();
-
-            for (JsonElement element : jsonArray) {
-                processTeamJson(element.toString(), eventKey);
-            }
-        } else {
+        if (Integer.parseInt(eventKey.substring(0, 4)) != year) {
             logger.warn("Event key {} is not for the year {}.", eventKey, year);
+        }
+        String teamObjects = TBAInterface.getTBAData("/event/" + eventKey + "/teams");
+
+        if (teamObjects == null) {
+            logger.error("TBA didn't return data. Is the event key {} valid?", eventKey);
+            return; // Return because we can't do anything with null data
+        }
+
+        JsonArray jsonArray = JsonParser.parseString(teamObjects).getAsJsonArray();
+
+        for (JsonElement element : jsonArray) {
+            processTeamJson(element.toString(), eventKey);
         }
     }
 
@@ -184,7 +220,7 @@ public class DatabaseManager {
             processTeamFromKey(i);
         }
     }
-    
+
     /**
      * Processes a JSON string representing match details from the main scout (scouting one individual team).
      *
@@ -223,7 +259,7 @@ public class DatabaseManager {
             logger.error("Error inserting strategy scout document: {}", e.getMessage());
         }
     }
-    
+
     public void processPitsJson(String matchJson) {
         Document matchDoc = Document.parse(matchJson);
         MongoDatabase database = mongoClient.getDatabase(getDBName());
@@ -273,7 +309,7 @@ public class DatabaseManager {
         );
         return getHashMaps(collection, filter);
     }
-    
+
     /**
      * Gets teams from a specific event.
      *
@@ -283,21 +319,21 @@ public class DatabaseManager {
     public HashMap<Integer, String> getTeamsFromEvent(String eventKey) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection("mainScout");
-    
+
         Bson filter = Filters.eq("event_key", eventKey);
 
         List<HashMap<String, Object>> documentsList = getHashMaps(collection, filter);
-        
+
         HashMap<Integer, String> teams = new HashMap<>();
         Set<String> teamKeys = new HashSet<>();
-        
+
         for (HashMap<String, Object> document : documentsList) {
             String teamKey = (String) document.get("team");
             if (teamKey != null) {
                 teamKeys.add(teamKey);
             }
         }
-        
+
         MongoCollection<Document> teamCollection = database.getCollection("teams");
         for (String teamKey : teamKeys) {
             Document teamDocument = teamCollection.find(new Document("key", teamKey)).first();
@@ -311,10 +347,10 @@ public class DatabaseManager {
                 logger.warn("Team document not found for key: {}", teamKey);
             }
         }
-        
+
         return teams;
     }
-    
+
     /**
      * Gets matches from a specific event.
      *
@@ -328,6 +364,7 @@ public class DatabaseManager {
         Bson filter = Filters.eq("event_key", eventKey);
         return getHashMaps(collection, filter);
     }
+
     public List<HashMap<String, Object>> getStratForEvent(String eventKey) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection("strategyScout");
@@ -335,6 +372,7 @@ public class DatabaseManager {
         Bson filter = Filters.eq("event_key", eventKey);
         return getHashMaps(collection, filter);
     }
+
     public List<HashMap<String, Object>> getPitsForEvent(String eventKey) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection("pits");
@@ -342,7 +380,7 @@ public class DatabaseManager {
         Bson filter = Filters.eq("event_key", eventKey);
         return getHashMaps(collection, filter);
     }
-    
+
     /**
      * Gets the keys of a random document in the main scout collection. It also formats subkeys to be more readable.
      *
@@ -351,16 +389,16 @@ public class DatabaseManager {
     public String[] getKeysForMainScout() {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection("mainScout");
-        
+
         Document random = collection.aggregate(List.of(Aggregates.sample(1))).first();
-        
+
         if (random == null) {
             logger.warn("No documents found in mainScout collection for the year {}.", year);
             return new String[0];
         }
-    
+
         List<String> keys = new ArrayList<>();
-        
+
         for (String key : random.keySet()) {
             if (key.equals("_id") || key.equals("team_key") || key.equals("event_key") || key.equals("match_num")) {
                 continue;
@@ -374,10 +412,10 @@ public class DatabaseManager {
                 keys.add(key);
             }
         }
-    
+
         return keys.toArray(new String[0]);
     }
-    
+
     /**
      * Converts MongoDB documents to a list of hash maps based on a filter.
      *
