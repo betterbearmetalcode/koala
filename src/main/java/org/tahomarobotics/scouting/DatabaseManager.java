@@ -391,6 +391,7 @@ public class DatabaseManager {
      * @see #pullFromTBA(DatabaseType, String)
      * @deprecated
      */
+    @Deprecated
     private void getAllMatchesFromTBA(String eventKey) {
         pullFromTBA(DatabaseType.TBA_MATCHES, eventKey);
     }
@@ -402,6 +403,7 @@ public class DatabaseManager {
      * @see #processJSON(DatabaseType, String, String...)
      * @deprecated
      */
+    @Deprecated
     public void processTeamJson(String teamJson, String... events) {
         processJSON(DatabaseType.TEAMS, teamJson, events);
     }
@@ -413,6 +415,7 @@ public class DatabaseManager {
      * @see #pullFromTBA(DatabaseType, String)
      * @deprecated
      */
+    @Deprecated
     public void processTeamsForEvent(String eventKey) {
         pullFromTBA(DatabaseType.TEAMS, eventKey);
     }
@@ -424,6 +427,7 @@ public class DatabaseManager {
      * @see #pullFromTBA(DatabaseType, String)
      * @deprecated
      */
+    @Deprecated
     public void processTeamsFromArrayList(ArrayList<String> teams) {
         for (String team : teams) {
             pullFromTBA(DatabaseType.TEAMS, team);
@@ -437,6 +441,7 @@ public class DatabaseManager {
      * @see #processJSON(DatabaseType, String, String...)
      * @deprecated
      */
+    @Deprecated
     public void processMainScoutJson(String matchJson) {
         processJSON(DatabaseType.MATCH, matchJson);
     }
@@ -448,6 +453,7 @@ public class DatabaseManager {
      * @see #processJSON(DatabaseType, String, String...)
      * @deprecated
      */
+    @Deprecated
     public void processStrategyScoutJson(String matchJson) {
         processJSON(DatabaseType.STRATEGY, matchJson);
     }
@@ -459,6 +465,7 @@ public class DatabaseManager {
      * @see #processJSON(DatabaseType, String, String...)
      * @deprecated
      */
+    @Deprecated
     public void processPitsJson(String matchJson) {
         processJSON(DatabaseType.PITS, matchJson);
     }
@@ -472,6 +479,7 @@ public class DatabaseManager {
      * @see #getDataFromTeam(DatabaseType, int, String)
      * @deprecated
      */
+    @Deprecated
     public List<HashMap<String, Object>> getMatchesFromTeam(String teamKey, String eventKey) {
         return getDataFromTeam(DatabaseType.MATCH, Integer.parseInt(teamKey.substring(3)), eventKey);
     }
@@ -485,6 +493,7 @@ public class DatabaseManager {
      * @see #getDataFromMatch(DatabaseType, int, String)
      * @deprecated
      */
+    @Deprecated
     public List<HashMap<String, Object>> getTeamsFromMatch(int matchNumber, String eventKey) {
         return getDataFromMatch(DatabaseType.MATCH, matchNumber, eventKey);
     }
@@ -497,6 +506,7 @@ public class DatabaseManager {
      * @see #getDataFromEvent(DatabaseType, String)
      * @deprecated Use {@link #getDataFromEvent(DatabaseType, String)} with extra code instead.
      */
+    @Deprecated
     public HashMap<Integer, String> getTeamsFromEvent(String eventKey) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection(DatabaseType.MATCH.getCollectionName());
@@ -537,7 +547,10 @@ public class DatabaseManager {
      *
      * @param eventKey the event key to filter matches.
      * @return a list of matches for the specified event.
+     * @see #getDataFromEvent(DatabaseType, String)
+     * @deprecated
      */
+    @Deprecated
     public List<HashMap<String, Object>> getMatchesFromEvent(String eventKey) {
         return getDataFromEvent(DatabaseType.MATCH, eventKey);
     }
@@ -550,6 +563,7 @@ public class DatabaseManager {
      * @see #getDataFromEvent(DatabaseType, String)
      * @deprecated
      */
+    @Deprecated
     public List<HashMap<String, Object>> getStratForEvent(String eventKey) {
         return getDataFromEvent(DatabaseType.STRATEGY, eventKey);
     }
@@ -562,6 +576,7 @@ public class DatabaseManager {
      * @see #getDataFromEvent(DatabaseType, String)
      * @deprecated
      */
+    @Deprecated
     public List<HashMap<String, Object>> getPitsForEvent(String eventKey) {
         return getDataFromEvent(DatabaseType.PITS, eventKey);
     }
@@ -573,6 +588,7 @@ public class DatabaseManager {
      * @see #getKeys(DatabaseType)
      * @deprecated
      */
+    @Deprecated
     public String[] getKeysForMainScout() {
         return getKeys(DatabaseType.MATCH);
     }
