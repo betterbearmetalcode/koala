@@ -221,13 +221,13 @@ public class Server {
 
             switch (header) {
                 case "match":
-                    databaseManager.processMainScoutJson(data);
+                    databaseManager.processJSON(DatabaseType.MATCH, data);
                     break;
                 case "strat":
-                    databaseManager.processStrategyScoutJson(data);
+                    databaseManager.processJSON(DatabaseType.STRATEGY, data);
                     break;
                 case "pit":
-                    databaseManager.processPitsJson(data);
+                    databaseManager.processJSON(DatabaseType.PITS, data);
                     break;
                 default:
                     logger.warn("\"{}\" is not a valid header!", header);
