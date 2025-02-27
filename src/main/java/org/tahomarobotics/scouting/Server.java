@@ -6,8 +6,10 @@ import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -28,6 +30,8 @@ public class Server {
     private static final Gson gson = new Gson();
     private final ServerSocket serverSocket;
     private JmDNS jmdns;
+    
+    private boolean running = false;
 
     private final int year;
 
@@ -77,6 +81,7 @@ public class Server {
      */
     public void start() {
         logger.info("Server started. Waiting for connections...");
+        running = true;
 
         try {
             while (!serverSocket.isClosed()) {
@@ -105,10 +110,29 @@ public class Server {
                 jmdns.unregisterAllServices();
                 jmdns.close();
             }
+            running = false;
             logger.info("Server stopped and service unregistered.");
         } catch (IOException e) {
             logger.error("Error stopping server", e);
         }
+    }
+    
+    /**
+     * Returns whether the server is running.
+     *
+     * @return Whether the server is running.
+     */
+    public boolean isRunning() {
+        return running;
+    }
+    
+    /**
+     * Returns the InetAddress of the server.
+     *
+     * @return The InetAddress of the server.
+     */
+    public InetAddress getInetAddress() {
+        return serverSocket.getInetAddress();
     }
 
     /**
@@ -132,40 +156,81 @@ public class Server {
                     // Print the received message
                     logger.info("Received from client: {}", clientMessage);
 
-                    JsonObject jsonObject = gson.fromJson(clientMessage, JsonObject.class);
-
-                    JsonElement headerElement = jsonObject.get("header");
-
-                    if (headerElement == null) {
-                        logger.error("No header in json data. Skipping...");
-                        continue;
-                    }
-
-                    String header = headerElement.getAsJsonObject().get("h0").getAsString();
-
-                    DatabaseManager databaseManager = new DatabaseManager(year);
-
-                    String data = jsonObject.get("data").toString();
-
                     for (ServerListener listener: listeners)
                         listener.receivedData(clientMessage);
 
-
-                    switch (header) {
-                        case "match":
-                            databaseManager.processMainScoutJson(data);
-                            break;
-                        case "strat":
-                            databaseManager.processStrategyScoutJson(data);
-                            break;
-                        case "pit":
-                            break;
-                        default:
-                            logger.error("\"{}\" is not a valid header!", header);
+                    if (clientMessage.startsWith("fn:")) {
+                        handleFile(clientMessage);
+                    } else {
+                        handleData(clientMessage);
                     }
                 }
             } catch (Exception e) {
                 logger.error("Error handling client", e);
+            }
+        }
+
+        private void handleFile(String clientMessage) {
+            int i = 0;
+            StringBuilder fileName = new StringBuilder();
+            boolean nameStarted = false;
+            for (char s : clientMessage.toCharArray()) {
+                if (s == ':')
+                    nameStarted = true;
+                if (s == '\n')
+                    break;
+                if (nameStarted)
+                    fileName.append(s);
+                i++;
+            }
+            String imageData = clientMessage.substring(i+1);
+            File file = new File(fileName.toString());
+            BufferedImage image;
+            try {
+                FileWriter writer = new FileWriter(file);
+                writer.write(imageData);
+                image = ImageIO.read(file);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void handleData(String clientMessage) {
+            JsonObject jsonObject = gson.fromJson(clientMessage, JsonObject.class);
+
+            String header = "";
+            try {
+                JsonElement headerElement = jsonObject.get("header");
+
+                if (headerElement == null) {
+                    logger.error("No header in json data. Skipping...");
+                    return;
+                }
+
+                header = headerElement.getAsJsonObject().get("h0").getAsString();
+            } catch (NullPointerException e) {
+                logger.warn("No headers received");
+            }
+
+
+            DatabaseManager databaseManager = new DatabaseManager(year);
+
+            String data = jsonObject.get("data").toString();
+
+
+
+            switch (header) {
+                case "match":
+                    databaseManager.processJSON(DatabaseType.MATCH, data);
+                    break;
+                case "strat":
+                    databaseManager.processJSON(DatabaseType.STRATEGY, data);
+                    break;
+                case "pit":
+                    databaseManager.processJSON(DatabaseType.PITS, data);
+                    break;
+                default:
+                    logger.warn("\"{}\" is not a valid header!", header);
             }
         }
 

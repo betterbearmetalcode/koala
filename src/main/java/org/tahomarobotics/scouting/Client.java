@@ -4,9 +4,7 @@ import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
@@ -147,6 +145,33 @@ public class Client {
                 logger.info("Data sent: {}", data);
             } catch (IOException e) {
                 logger.error("Failed to send data", e);
+            }
+        } else {
+            logger.warn("Not connected to a server.");
+        }
+    }
+
+    /**
+     * An overload of sendData to send images
+     *
+     * @param file the file to send
+     */
+    public void sendData(File file) {
+        if (connected) {
+            try {
+                OutputStream out = socket.getOutputStream();
+                OutputStreamWriter writer = new OutputStreamWriter(out);
+                FileReader reader = new FileReader(file);
+                int line;
+                writer.write("fn:" + file.getName() + "\n");
+                while ((line = reader.read()) != -1) {
+                    writer.write(line);
+                }
+                writer.write('\u0003');
+                out.flush();
+                reader.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         } else {
             logger.warn("Not connected to a server.");
