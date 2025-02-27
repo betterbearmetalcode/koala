@@ -78,7 +78,7 @@ public class DatabaseManager {
                 }
                 String teamObjects = TBAInterface.getTBAData("/event/" + eventKey + "/teams");
                 if (teamObjects == null) {
-                    logger.error("TBA didn't return data. Is the event key {} valid?", eventKey);
+                    logger.error("TBA didn't return data for query /event/{}/teams. Is the event key {} valid?", eventKey, eventKey);
                     return;
                 }
                 JsonArray jsonArray = JsonParser.parseString(teamObjects).getAsJsonArray();
@@ -89,7 +89,7 @@ public class DatabaseManager {
             case TBA_MATCHES -> {
                 String matchesJson = TBAInterface.getTBAData("/event/" + eventKey + "/matches");
                 if (matchesJson == null) {
-                    logger.error("TBA didn't return data. Is the event key {} valid?", eventKey);
+                    logger.error("TBA didn't return data for query /event/{}/matches. Is the event key {} valid?", eventKey, eventKey);
                     return;
                 }
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
@@ -239,7 +239,7 @@ public class DatabaseManager {
                 }
                 Set<String> teamKeys = new HashSet<>();
                 for (HashMap<String, Object> match : matchData) {
-                    teamKeys.add((String) "frc" + match.get("team"));
+                    teamKeys.add("frc" + match.get("team"));
                 }
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(DatabaseType.TEAMS.getCollectionName());
@@ -412,19 +412,6 @@ public class DatabaseManager {
     //.##..##..##......##......##..##..##......##..##..##..##....##....##......##..##..........##...##..##........##....##..##..##..##..##..##......##.
     //.#####...######..##......##..##..######...####...##..##....##....######..#####...........##...##..######....##....##..##...####...#####....####..
     // Deprecated Methods Below!!!!
-
-
-    /**
-     * Gets all matches from TBA for a specific event.
-     *
-     * @param eventKey the event key to get matches for.
-     * @see #pullFromTBA(DatabaseType, String)
-     * @deprecated
-     */
-    @Deprecated
-    private void getAllMatchesFromTBA(String eventKey) {
-        pullFromTBA(DatabaseType.TBA_MATCHES, eventKey);
-    }
 
     /**
      * Processes a JSON string representing team details and ensures the team is in the database.
