@@ -37,6 +37,17 @@ public class DatabaseManager {
     }
 
     /**
+     * Constructs a DatabaseManager for a specified year and MongoClient.
+     *
+     * @param year        the year used to form the database name and queries.
+     * @param mongoClient the MongoClient instance to use for database operations.
+     */
+    public DatabaseManager(int year, MongoClient mongoClient) {
+        this.year = year;
+        this.mongoClient = mongoClient;
+    }
+
+    /**
      * Returns the database name for the current season.
      *
      * @return the fully formed database name, combining a prefix with the year.
@@ -228,7 +239,7 @@ public class DatabaseManager {
                 }
                 Set<String> teamKeys = new HashSet<>();
                 for (HashMap<String, Object> match : matchData) {
-                    teamKeys.add((String) match.get("team_key"));
+                    teamKeys.add((String) "frc" + match.get("team"));
                 }
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(DatabaseType.TEAMS.getCollectionName());
@@ -239,7 +250,13 @@ public class DatabaseManager {
                 }
                 return teams;
             }
-            case MATCH, STRATEGY -> {
+            case MATCH -> {
+                MongoDatabase database = mongoClient.getDatabase(getDBName());
+                MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
+                Bson filter = Filters.and(Filters.eq("match", Integer.toString(matchNumber)), Filters.eq("event_key", eventKey));
+                return getHashMaps(collection, filter);
+            }
+            case STRATEGY -> {
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
                 Bson filter = Filters.and(Filters.eq("match", matchNumber), Filters.eq("event_key", eventKey));
@@ -266,7 +283,13 @@ public class DatabaseManager {
      */
     public List<HashMap<String, Object>> getDataFromEvent(DatabaseType databaseType, String eventKey) {
         switch (databaseType) {
-            case TEAMS, MATCH, STRATEGY, PITS, TBA_MATCHES -> {
+            case TEAMS -> {
+                MongoDatabase database = mongoClient.getDatabase(getDBName());
+                MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
+                Bson filter = Filters.eq("events", eventKey);
+                return getHashMaps(collection, filter);
+            }
+            case MATCH, STRATEGY, PITS, TBA_MATCHES -> {
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
                 Bson filter = Filters.eq("event_key", eventKey);
@@ -304,13 +327,20 @@ public class DatabaseManager {
             case MATCH, PITS -> {
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
-                Bson filter = Filters.and(Filters.eq("team", teamNum), Filters.eq("event_key", eventKey));
+                Bson filter = Filters.and(Filters.eq("team", Integer.toString(teamNum)), Filters.eq("event_key", eventKey));
                 return getHashMaps(collection, filter);
             }
             case STRATEGY -> {
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
-                Bson filter = Filters.and(Filters.eq("event_key", eventKey), Filters.regex("strategy", ".*" + teamNum + ".*"));
+                Bson filter = Filters.and(
+                        Filters.eq("event_key", eventKey),
+                        Filters.or(
+                                Filters.eq("strategy.1", teamNum),
+                                Filters.eq("strategy.2", teamNum),
+                                Filters.eq("strategy.3", teamNum)
+                        )
+                );
                 return getHashMaps(collection, filter);
             }
             case TBA_MATCHES -> {
@@ -604,19 +634,14 @@ public class DatabaseManager {
      */
     @NotNull
     private List<HashMap<String, Object>> getHashMaps(MongoCollection<Document> collection, Bson filter) {
-        MongoCursor<Document> cursor = collection.find(filter).iterator();
         List<HashMap<String, Object>> documentsList = new ArrayList<>();
-
-        try {
+        try (MongoCursor<Document> cursor = collection.find(filter).iterator()) {
             while (cursor.hasNext()) {
                 Document document = cursor.next();
                 HashMap<String, Object> map = new HashMap<>(document);
                 documentsList.add(map);
             }
-        } finally {
-            cursor.close();
         }
-
         return documentsList;
     }
 

@@ -5,7 +5,7 @@ public enum DatabaseType {
     STRATEGY("strat"),
     PITS("pits"),
     TEAMS("teams"),
-    TBA_MATCHES("tbaMatches");
+    TBA_MATCHES("tba_matches");
     
     private final String collectionName;
     
