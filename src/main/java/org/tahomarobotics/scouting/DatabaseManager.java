@@ -203,8 +203,8 @@ public class DatabaseManager {
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
 
-                int teamNum = Integer.parseInt(matchDoc.getString("team"));
-                int matchNum = Integer.parseInt(matchDoc.getString("match"));
+                String teamNum = matchDoc.getString("team");
+                String matchNum = matchDoc.getString("match");
                 String eventKey = matchDoc.getString("event_key");
 
                 Bson filter = Filters.and(Filters.eq("team", teamNum), Filters.eq("match", matchNum), Filters.eq("event_key", eventKey));
@@ -222,16 +222,14 @@ public class DatabaseManager {
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
 
-                int teamNum = matchDoc.getInteger("team");
+                int match = matchDoc.getInteger("match");
                 String eventKey = matchDoc.getString("event_key");
+                boolean isRedAlliance = matchDoc.getBoolean("is_red_alliance");
 
                 Bson filter = Filters.and(
+                        Filters.eq("match", match),
                         Filters.eq("event_key", eventKey),
-                        Filters.or(
-                                Filters.eq("strategy.1", teamNum),
-                                Filters.eq("strategy.2", teamNum),
-                                Filters.eq("strategy.3", teamNum)
-                        )
+                        Filters.eq("is_red_alliance", isRedAlliance)
                 );
                 
                 try {
@@ -247,7 +245,7 @@ public class DatabaseManager {
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
                 
-                int teamNum = Integer.parseInt(matchDoc.getString("team"));
+                String teamNum = matchDoc.getString("team");
                 String eventKey = matchDoc.getString("event_key");
                 
                 Bson filter = Filters.and(Filters.eq("team", teamNum), Filters.eq("event_key", eventKey));
