@@ -101,33 +101,20 @@ public class DatabaseManager {
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
                 JsonArray jsonArray = JsonParser.parseString(matchesJson).getAsJsonArray();
-
-                List<Document> newMatches = new ArrayList<>();
-                List<String> matchKeys = new ArrayList<>();
                 for (JsonElement element : jsonArray) {
                     Document matchDoc = Document.parse(element.toString());
-                    String matchKey = matchDoc.getString("key");
-                    matchKeys.add(matchKey);
-                }
+                    String key = matchDoc.getString("key");
 
-                List<Document> existingMatches = collection.find(Filters.in("key", matchKeys)).into(new ArrayList<>());
-                Set<String> existingSet = new HashSet<>();
-                for (Document doc : existingMatches) {
-                    existingSet.add(doc.getString("key"));
-                }
+                    Bson filter = Filters.and(
+                            Filters.eq("key", key)
+                    );
 
-                for (JsonElement element : jsonArray) {
-                    Document matchDoc = Document.parse(element.toString());
-                    String matchKey = matchDoc.getString("key");
-                    if (!existingSet.contains(matchKey)) {
-                        newMatches.add(matchDoc);
+                    try {
+                        collection.replaceOne(filter, matchDoc, new ReplaceOptions().upsert(true));
+                        logger.info("Added new TBA data for key {}.", key);
+                    } catch (Exception e) {
+                        logger.error("Error inserting TBA data for key {}: {}", key, e.getMessage());
                     }
-                }
-                if (!newMatches.isEmpty()) {
-                    collection.insertMany(newMatches);
-                    logger.info("Added {} new matches to the database.", newMatches.size());
-                } else {
-                    logger.info("No new matches to insert.");
                 }
             }
             default -> logger.warn("Database {} is not supported for pulling from TBA.", databaseType);
