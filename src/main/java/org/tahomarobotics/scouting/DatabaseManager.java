@@ -19,12 +19,15 @@ public class DatabaseManager {
 
     private final int year;
     private final MongoClient mongoClient;
+    private final boolean testing;
 
     // MongoDB connection parameters
     private static final String CONNECTION_STRING = "mongodb://localhost:27017";
     private static final String DATABASE_PREFIX = "KoalaScouting_";
+    private static final String TESTING_PREFIX = "TESTING_";
     private static final Logger logger = LoggerFactory.getLogger(DatabaseManager.class);
     private static final Gson gson = new Gson();
+    //touch isaac when we win************=2046
 
     /**
      * Constructs a DatabaseManager for a specified year.
@@ -34,17 +37,19 @@ public class DatabaseManager {
     public DatabaseManager(int year) {
         this.year = year;
         this.mongoClient = MongoClients.create(CONNECTION_STRING);
+        this.testing = false;
     }
 
     /**
-     * Constructs a DatabaseManager for a specified year and MongoClient.
+     * Constructs a DatabaseManager for a specified year.
      *
-     * @param year        the year used to form the database name and queries.
-     * @param mongoClient the MongoClient instance to use for database operations.
+     * @param year the year used to form the database name and queries.
+     * @param testing if DatabaseManager should use a separate testing database
      */
-    public DatabaseManager(int year, MongoClient mongoClient) {
+    public DatabaseManager(int year, boolean testing) {
         this.year = year;
-        this.mongoClient = mongoClient;
+        this.mongoClient = MongoClients.create(CONNECTION_STRING);
+        this.testing = testing;
     }
 
     /**
@@ -53,7 +58,7 @@ public class DatabaseManager {
      * @return the fully formed database name, combining a prefix with the year.
      */
     public String getDBName() {
-        return DATABASE_PREFIX + year;
+        return (testing ? TESTING_PREFIX : "") + DATABASE_PREFIX + year;
     }
 
     /**
