@@ -1,6 +1,7 @@
 package org.tahomarobotics.scouting;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +71,20 @@ public class TBAInterface {
             LOGGER.error("Invalid URI: {}", e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Checks with TBA to see if the provided event key is valid
+     * @param key the key to check
+     * @return true if the key is valid
+     */
+    public static boolean isValidEventKey(String key) {
+        Gson gson = new Gson();
+
+        JsonObject tbaData = gson.fromJson(getTBAData("/event/" + key + "/simple"), JsonObject.class);
+
+        if (tbaData == null) { return false; }
+        return !tbaData.has("Error");
     }
 
     private static String getConfig() {
