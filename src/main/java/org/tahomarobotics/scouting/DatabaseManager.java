@@ -4,6 +4,7 @@ import com.google.gson.*;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.ReplaceOptions;
 import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -201,14 +202,61 @@ public class DatabaseManager {
                     }
                 }
             }
-            case MATCH, STRATEGY, PITS -> {
+            case MATCH -> {
                 Document matchDoc = Document.parse(json);
 
                 MongoDatabase database = mongoClient.getDatabase(getDBName());
                 MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
 
+                String teamNum = matchDoc.getString("team");
+                String matchNum = matchDoc.getString("match");
+                String eventKey = matchDoc.getString("event_key");
+
+                Bson filter = Filters.and(Filters.eq("team", teamNum), Filters.eq("match", matchNum), Filters.eq("event_key", eventKey));
+
                 try {
-                    collection.insertOne(matchDoc);
+                    collection.replaceOne(filter, matchDoc, new ReplaceOptions().upsert(true));
+                    logger.info("Added new {} document from JSON data.", databaseType.getCollectionName());
+                } catch (Exception e) {
+                    logger.error("Error inserting {} document: {}", databaseType.getCollectionName(), e.getMessage());
+                }
+            }
+            case STRATEGY -> {
+                Document matchDoc = Document.parse(json);
+
+                MongoDatabase database = mongoClient.getDatabase(getDBName());
+                MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
+
+                int match = matchDoc.getInteger("match");
+                String eventKey = matchDoc.getString("event_key");
+                boolean isRedAlliance = matchDoc.getBoolean("is_red_alliance");
+
+                Bson filter = Filters.and(
+                        Filters.eq("match", match),
+                        Filters.eq("event_key", eventKey),
+                        Filters.eq("is_red_alliance", isRedAlliance)
+                );
+                
+                try {
+                    collection.replaceOne(filter, matchDoc, new ReplaceOptions().upsert(true));
+                    logger.info("Added new {} document from JSON data.", databaseType.getCollectionName());
+                } catch (Exception e) {
+                    logger.error("Error inserting {} document: {}", databaseType.getCollectionName(), e.getMessage());
+                }
+            }
+            case PITS -> {
+                Document matchDoc = Document.parse(json);
+
+                MongoDatabase database = mongoClient.getDatabase(getDBName());
+                MongoCollection<Document> collection = database.getCollection(databaseType.getCollectionName());
+                
+                String teamNum = matchDoc.getString("team");
+                String eventKey = matchDoc.getString("event_key");
+                
+                Bson filter = Filters.and(Filters.eq("team", teamNum), Filters.eq("event_key", eventKey));
+
+                try {
+                    collection.replaceOne(filter, matchDoc, new ReplaceOptions().upsert(true));
                     logger.info("Added new {} document from JSON data.", databaseType.getCollectionName());
                 } catch (Exception e) {
                     logger.error("Error inserting {} document: {}", databaseType.getCollectionName(), e.getMessage());
