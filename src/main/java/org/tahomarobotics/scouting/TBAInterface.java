@@ -2,6 +2,7 @@ package org.tahomarobotics.scouting;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import org.intellij.lang.annotations.RegExp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,8 @@ public class TBAInterface {
      */
     public static boolean isValidEventKey(String key) {
         Gson gson = new Gson();
-
+        if (key.matches("\\p{Punct}"))
+            return false;
         JsonObject tbaData = gson.fromJson(getTBAData("/event/" + key + "/simple"), JsonObject.class);
 
         if (tbaData == null) { return false; }
