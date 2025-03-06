@@ -460,7 +460,7 @@ public class DatabaseManager {
      * @see #processJSON(DatabaseType, String, String...)
      * @deprecated
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public void processTeamJson(String teamJson, String... events) {
         processJSON(DatabaseType.TEAMS, teamJson, events);
     }
@@ -469,10 +469,9 @@ public class DatabaseManager {
      * Gets the teams for a specified event, then adds them into the database.
      *
      * @param eventKey the event key to get teams for. A valid event key looks like this: "2025wasno" (PNW District Glacier Peak Event 2025).
-     * @see #pullFromTBA(DatabaseType, String)
-     * @deprecated
+     * @deprecated Use {@link #pullFromTBA(DatabaseType, String)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public void processTeamsForEvent(String eventKey) {
         pullFromTBA(DatabaseType.TEAMS, eventKey);
     }
@@ -481,10 +480,9 @@ public class DatabaseManager {
      * Gets team keys from an arraylist and adds their details to the database. Useful for off season events or when there is no data from TBA on an event.
      *
      * @param teams an arraylist of teams to add. The arraylist should be team keys. Example: [frc2046, frc1678, frc2910].
-     * @see #pullFromTBA(DatabaseType, String)
-     * @deprecated
+     * @deprecated Use {@link #pullFromTBA(DatabaseType, String)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public void processTeamsFromArrayList(ArrayList<String> teams) {
         for (String team : teams) {
             pullFromTBA(DatabaseType.TEAMS, team);
@@ -495,10 +493,9 @@ public class DatabaseManager {
      * Processes a JSON string representing match details from the main scout (scouting one individual team).
      *
      * @param matchJson a JSON string containing match details. Should follow the yearly schema for main scouting to the letter.
-     * @see #processJSON(DatabaseType, String, String...)
-     * @deprecated
+     * @deprecated Use {@link #processJSON(DatabaseType, String, String...)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public void processMainScoutJson(String matchJson) {
         processJSON(DatabaseType.MATCH, matchJson);
     }
@@ -507,10 +504,9 @@ public class DatabaseManager {
      * Processes a JSON string representing match details from the strategy scout (scouting the whole alliance).
      *
      * @param matchJson a JSON string containing match details. Should follow the yearly schema for strategy scouting to the letter.
-     * @see #processJSON(DatabaseType, String, String...)
-     * @deprecated
+     * @deprecated Use {@link #processJSON(DatabaseType, String, String...)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public void processStrategyScoutJson(String matchJson) {
         processJSON(DatabaseType.STRATEGY, matchJson);
     }
@@ -519,10 +515,9 @@ public class DatabaseManager {
      * Processes a JSON string representing pit scouting details.
      *
      * @param matchJson a JSON string containing pit scouting details. Should follow the yearly schema for pit scouting to the letter.
-     * @see #processJSON(DatabaseType, String, String...)
-     * @deprecated
+     * @deprecated Use {@link #processJSON(DatabaseType, String, String...)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public void processPitsJson(String matchJson) {
         processJSON(DatabaseType.PITS, matchJson);
     }
@@ -533,10 +528,9 @@ public class DatabaseManager {
      * @param teamKey  the team key to filter matches.
      * @param eventKey the event key to filter matches.
      * @return a list of matches for the specified team and event.
-     * @see #getDataFromTeam(DatabaseType, int, String)
-     * @deprecated
+     * @deprecated Use {@link #getDataFromTeam(DatabaseType, int, String)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public List<HashMap<String, Object>> getMatchesFromTeam(String teamKey, String eventKey) {
         return getDataFromTeam(DatabaseType.MATCH, Integer.parseInt(teamKey.substring(3)), eventKey);
     }
@@ -547,10 +541,9 @@ public class DatabaseManager {
      * @param matchNumber the match number to filter teams.
      * @param eventKey    the event key to filter teams.
      * @return a list of teams for the specified match and event.
-     * @see #getDataFromMatch(DatabaseType, int, String)
-     * @deprecated
+     * @deprecated Use {@link #getDataFromMatch(DatabaseType, int, String)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public List<HashMap<String, Object>> getTeamsFromMatch(int matchNumber, String eventKey) {
         return getDataFromMatch(DatabaseType.MATCH, matchNumber, eventKey);
     }
@@ -560,10 +553,9 @@ public class DatabaseManager {
      *
      * @param eventKey the event key to filter teams.
      * @return a map of team numbers and their names for the specified event.
-     * @see #getDataFromEvent(DatabaseType, String)
      * @deprecated Use {@link #getDataFromEvent(DatabaseType, String)} with extra code instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public HashMap<Integer, String> getTeamsFromEvent(String eventKey) {
         MongoDatabase database = mongoClient.getDatabase(getDBName());
         MongoCollection<Document> collection = database.getCollection(DatabaseType.MATCH.getCollectionName());
@@ -604,10 +596,9 @@ public class DatabaseManager {
      *
      * @param eventKey the event key to filter matches.
      * @return a list of matches for the specified event.
-     * @see #getDataFromEvent(DatabaseType, String)
-     * @deprecated
+     * @deprecated Use {@link #getDataFromEvent(DatabaseType, String)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public List<HashMap<String, Object>> getMatchesFromEvent(String eventKey) {
         return getDataFromEvent(DatabaseType.MATCH, eventKey);
     }
@@ -617,10 +608,9 @@ public class DatabaseManager {
      *
      * @param eventKey the event key to filter strategy scout data.
      * @return a list of strategy scout data for the specified event.
-     * @see #getDataFromEvent(DatabaseType, String)
-     * @deprecated
+     * @deprecated Use {@link #getDataFromEvent(DatabaseType, String)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public List<HashMap<String, Object>> getStratForEvent(String eventKey) {
         return getDataFromEvent(DatabaseType.STRATEGY, eventKey);
     }
@@ -630,10 +620,9 @@ public class DatabaseManager {
      *
      * @param eventKey the event key to filter pit scout data.
      * @return a list of pit scout data for the specified event.
-     * @see #getDataFromEvent(DatabaseType, String)
-     * @deprecated
+     * @deprecated Use {@link #getDataFromEvent(DatabaseType, String)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public List<HashMap<String, Object>> getPitsForEvent(String eventKey) {
         return getDataFromEvent(DatabaseType.PITS, eventKey);
     }
@@ -642,10 +631,9 @@ public class DatabaseManager {
      * Gets the keys of a random document in the main scout collection. It also formats subkeys to be more readable.
      *
      * @return an array of keys
-     * @see #getKeys(DatabaseType)
-     * @deprecated
+     * @deprecated Use {@link #getKeys(DatabaseType)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "2.0.0", forRemoval = true)
     public String[] getKeysForMainScout() {
         return getKeys(DatabaseType.MATCH);
     }

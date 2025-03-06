@@ -2,90 +2,120 @@ package org.tahomarobotics.scouting;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import org.intellij.lang.annotations.RegExp;
+import okhttp3.Headers;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.internal.http2.Header;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Objects;
 
 public class TBAInterface {
     private static final Logger LOGGER = LoggerFactory.getLogger(TBAInterface.class);
-
-    /**
-     * Base URL for The Blue Alliance API
-     */
+    private static final OkHttpClient CLIENT = new OkHttpClient();
     public static final String TBA_API = "https://www.thebluealliance.com/api/v3";
 
     /**
+     * Method to fetch data from The Blue Alliance API <br>
+     *
+     * @param endpoint the endpoint of the data you want to get. An example would be "/status".
+     * @param headers  the headers to send with the request
+     * @return the JSON data from The Blue Alliance API, or null if an error occurs
+     * @see <a href="https://www.thebluealliance.com/apidocs/v3">https://www.thebluealliance.com/apidocs/v3</a>
+     */
+    @Nullable
+    public static Response getTBAResponse(String endpoint, Headers headers) {
+        try {
+            Request request = new Request.Builder().url(TBA_API + endpoint).headers(headers).header("X-TBA-Auth-Key", Objects.requireNonNull(getConfig())).build();
+
+            return CLIENT.newCall(request).execute();
+        } catch (IOException | NullPointerException e) {
+            LOGGER.error("Failed to execute request: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Method to fetch data from The Blue Alliance API <br>
+     *
+     * @param endpoint the endpoint of the data you want to get. An example would be "/status".
+     * @param headers  the headers to send with the request
+     * @return the JSON data from The Blue Alliance API, or null if an error occurs
+     * @see <a href="https://www.thebluealliance.com/apidocs/v3">https://www.thebluealliance.com/apidocs/v3</a>
+     */
+    @Nullable
+    public static Response getTBAResponse(String endpoint, Header... headers) {
+        Headers.Builder headersBuilder = new Headers.Builder();
+        for (Header header : headers) {
+            headersBuilder.add(header.name.utf8(), header.value.utf8());
+        }
+        return getTBAResponse(endpoint, headersBuilder.build());
+    }
+    
+    @Nullable
+    public static Response getTBAResponse(String endpoint, String ifNoneMatch, Headers headers) {
+        return getTBAResponse(endpoint, new Headers.Builder().addAll(headers).add("If-None-Match", ifNoneMatch).build());
+    }
+    
+    @Nullable
+    public static Response getTBAResponse(String endpoint, String ifNoneMatch, Header... headers) {
+        Headers.Builder headersBuilder = new Headers.Builder();
+        for (Header header : headers) {
+            headersBuilder.add(header.name.utf8(), header.value.utf8());
+        }
+        headersBuilder.add("If-None-Match", ifNoneMatch);
+        return getTBAResponse(endpoint, headersBuilder.build());
+    }
+
+    /**
      * Method to fetch data from The Blue Alliance API
+     *
      * @param endpoint the endpoint of the data you want to get. An example would be "/status".
      * @return the JSON data from The Blue Alliance API, or null if an error occurs
      * @see <a href="https://www.thebluealliance.com/apidocs/v3">https://www.thebluealliance.com/apidocs/v3</a>
      */
     public static String getTBAData(String endpoint) {
-        try {
-            // Construct the full URI by combining the base server URL and the endpoint
-            URI object = new URI(TBA_API + endpoint);
-            
-            HttpResponse<String> response;
-
-            try {
-                // Don't put into try-with-resources because HttpClient cannot be converted to AutoCloseable
-                HttpClient client = HttpClient.newBuilder()
-                        .version(HttpClient.Version.HTTP_2)
-                        .followRedirects(HttpClient.Redirect.NORMAL)
-                        .build();
-                
-                // Build the HTTP request with the API key in the header
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(object)
-                        .header("X-TBA-Auth-Key", getConfig())
-                        .GET()
-                        .build();
-
-                // Send the request and receive the response
-                response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            // Handle different response status codes
-            if (response.statusCode() == 401) {
+        try (Response response = getTBAResponse(endpoint)) {
+            assert response != null;
+            int statusCode = response.code();
+            if (statusCode == 401) {
                 LOGGER.error("Authorization token is not valid");
                 return null;
-            } else if (response.statusCode() == 404) {
+            } else if (statusCode == 404) {
                 LOGGER.error("Endpoint not found");
                 return null;
-            } else {
+            } else if (response.body() != null) {
                 LOGGER.info("Got good response from " + TBA_API + "{}", endpoint);
-                return response.body();
+                return response.body().string();
             }
-        } catch (URISyntaxException e) {
-            LOGGER.error("Invalid URI: {}", e.getMessage());
+        } catch (IOException e) {
+            LOGGER.error("Failed to execute request: {}", e.getMessage());
         }
         return null;
     }
 
     /**
      * Checks with TBA to see if the provided event key is valid
+     *
      * @param key the key to check
      * @return true if the key is valid
      */
     public static boolean isValidEventKey(String key) {
         Gson gson = new Gson();
-        if (key.matches("\\p{Punct}"))
-            return false;
+        if (key.matches("\\p{Punct}")) return false;
         JsonObject tbaData = gson.fromJson(getTBAData("/event/" + key + "/simple"), JsonObject.class);
 
-        if (tbaData == null) { return false; }
+        if (tbaData == null) {
+            return false;
+        }
         return !tbaData.has("Error");
     }
 

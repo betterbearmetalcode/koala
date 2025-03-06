@@ -18,6 +18,7 @@ dependencies {
     implementation("org.jmdns:jmdns:3.6.0")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("org.mongodb:mongodb-driver-sync:5.2.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 tasks.test {
