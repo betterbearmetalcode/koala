@@ -165,8 +165,19 @@ public class DatabaseManager {
 
                 Document existingTeam = collection.find(new Document("key", key)).first();
                 if (existingTeam == null) {
-                    Document teamDoc = new Document("key", key).append("team_number", teamNumber).append("nickname", nickname).append("events", Arrays.asList(events)).append("name", name).append("school_name", schoolName).append("city", city).append("state_prov", stateProv).append("country", country).append("website", website).append("tba_website", tbaWebsite).append("rookie_year", rookieYear).append("motto", motto);
-
+                    Document teamDoc = new Document("key", key)
+                        .append("team_number", teamNumber)
+                        .append("nickname", nickname)
+                        .append("events", Arrays.asList(events))
+                        .append("name", name)
+                        .append("school_name", schoolName)
+                        .append("city", city)
+                        .append("state_prov", stateProv)
+                        .append("country", country)
+                        .append("website", website)
+                        .append("tba_website", tbaWebsite)
+                        .append("rookie_year", rookieYear)
+                        .append("motto", motto);
                     try {
                         collection.insertOne(teamDoc);
                         logger.info("Added new team: {} ({})", nickname, key);
