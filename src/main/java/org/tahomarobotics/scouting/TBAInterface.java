@@ -24,11 +24,11 @@ public class TBAInterface {
     public static final String TBA_API = "https://www.thebluealliance.com/api/v3";
 
     /**
-     * Method to fetch data from The Blue Alliance API <br>
+     * Method to fetch a response from The Blue Alliance API <br>
      *
      * @param endpoint the endpoint of the data you want to get. An example would be "/status".
      * @param headers  the headers to send with the request
-     * @return the JSON data from The Blue Alliance API, or null if an error occurs
+     * @return the response from The Blue Alliance API, or null if an error occurs
      * @see <a href="https://www.thebluealliance.com/apidocs/v3">https://www.thebluealliance.com/apidocs/v3</a>
      */
     @Nullable
@@ -44,11 +44,11 @@ public class TBAInterface {
     }
 
     /**
-     * Method to fetch data from The Blue Alliance API <br>
+     * Method to fetch a response from The Blue Alliance API <br>
      *
      * @param endpoint the endpoint of the data you want to get. An example would be "/status".
      * @param headers  the headers to send with the request
-     * @return the JSON data from The Blue Alliance API, or null if an error occurs
+     * @return the response from The Blue Alliance API, or null if an error occurs
      * @see <a href="https://www.thebluealliance.com/apidocs/v3">https://www.thebluealliance.com/apidocs/v3</a>
      */
     @Nullable
@@ -59,12 +59,28 @@ public class TBAInterface {
         }
         return getTBAResponse(endpoint, headersBuilder.build());
     }
-    
+
+    /**
+     * Method to fetch a response from The Blue Alliance API
+     * 
+     * @param endpoint the endpoint of the data you want to get. An example would be "/status".
+     * @param ifNoneMatch the If-None-Match header to send with the request
+     * @param headers the headers to send with the request
+     * @return the response from The Blue Alliance API, or null if an error occurs
+     */
     @Nullable
     public static Response getTBAResponse(String endpoint, String ifNoneMatch, Headers headers) {
         return getTBAResponse(endpoint, new Headers.Builder().addAll(headers).add("If-None-Match", ifNoneMatch).build());
     }
     
+    /**
+     * Method to fetch a response from The Blue Alliance API
+     * 
+     * @param endpoint the endpoint of the data you want to get. An example would be "/status".
+     * @param ifNoneMatch the If-None-Match header to send with the request
+     * @param headers the headers to send with the request
+     * @return the response from The Blue Alliance API, or null if an error occurs
+     */
     @Nullable
     public static Response getTBAResponse(String endpoint, String ifNoneMatch, Header... headers) {
         Headers.Builder headersBuilder = new Headers.Builder();
