@@ -186,10 +186,10 @@ public class Server {
             String imageData = clientMessage.substring(i+1);
             File file = new File(fileName.toString());
             BufferedImage image;
-            try {
-                FileWriter writer = new FileWriter(file);
+            try (FileWriter writer = new FileWriter(file)) {
                 writer.write(imageData);
                 image = ImageIO.read(file);
+                writer.flush();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
